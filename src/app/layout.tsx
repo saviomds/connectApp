@@ -1,0 +1,38 @@
+import type { Metadata } from 'next'
+import { Geist } from 'next/font/google'
+import './globals.css'
+import { Suspense } from 'react'
+import { Navbar } from '@/components/layout/Navbar'
+import { getCachedUser } from '@/lib/supabase/server'
+import PresenceTracker from '@/components/PresenceTracker'
+
+const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
+
+export const metadata: Metadata = {
+  title: 'ConnectApp — Discover. Match. Grow.',
+  description: 'Premium social discovery and professional networking platform.',
+}
+
+// Thin static skeleton shown while Navbar resolves — prevents layout shift
+function NavbarShell() {
+  return (
+    <div className="fixed top-0 left-0 right-0 z-50 h-16 glass border-b border-white/[0.06]" />
+  )
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // getCachedUser() is shared with Navbar — only ONE getUser() call total per page
+  const user = await getCachedUser()
+
+  return (
+    <html lang="en" className={`${geist.variable} h-full`}>
+      <body className="min-h-full bg-bg-primary text-text-primary">
+        <Suspense fallback={<NavbarShell />}>
+          <Navbar />
+        </Suspense>
+        {user && <PresenceTracker />}
+        {children}
+      </body>
+    </html>
+  )
+}
