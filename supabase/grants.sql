@@ -36,6 +36,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON swipes        TO service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON conversations TO service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON messages      TO service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON profiles      TO service_role;
+GRANT ALL                            ON app_settings  TO service_role;
 
 -- Safety: Only grant specific permissions. DO NOT automatically grant DELETE on future tables.
 ALTER DEFAULT PRIVILEGES IN SCHEMA public

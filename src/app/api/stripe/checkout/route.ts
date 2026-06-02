@@ -35,7 +35,12 @@ export async function POST(request: Request) {
 
     return Response.json({ url: session.url })
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Stripe error'
-    return Response.json({ error: message }, { status: 500 })
+    const raw = err instanceof Error ? err.message : 'Stripe error'
+    // Surface config errors as 503 so the client can show a clear message
+    const isConfig = raw.includes('not set') || raw.includes('not configured')
+    return Response.json(
+      { error: isConfig ? 'Payment is not configured yet. Check Admin → Settings.' : raw },
+      { status: isConfig ? 503 : 500 }
+    )
   }
 }
