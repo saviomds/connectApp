@@ -23,7 +23,7 @@ export default function AdminNav({ email }: { email: string }) {
   return (
     <>
       {/* ── Sidebar (desktop) ── */}
-      <aside className="hidden md:flex flex-col w-56 shrink-0 glass border-r border-white/[0.06] fixed top-16 bottom-0 left-0 z-40 px-3 py-5">
+      <aside className="hidden md:flex flex-col w-56 shrink-0 fixed top-16 bottom-0 left-0 z-40 px-3 py-5" style={{ background: '#13131A', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
         <div className="flex items-center gap-2 px-3 mb-5">
           <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse shrink-0" />
           <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">Admin Panel</p>
@@ -59,7 +59,7 @@ export default function AdminNav({ email }: { email: string }) {
       </aside>
 
       {/* ── Mobile top strip ── */}
-      <div className="md:hidden fixed top-16 left-0 right-0 z-40 glass border-b border-white/[0.06] flex items-center gap-1 px-3 py-2 overflow-x-auto">
+      <div className="md:hidden fixed top-16 left-0 right-0 z-40 flex items-center gap-1 px-3 py-2 overflow-x-auto" style={{ background: '#13131A', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
         {NAV.map(({ href, label, icon: Icon, exact }) => {
           const on = active(href, exact)
           return (

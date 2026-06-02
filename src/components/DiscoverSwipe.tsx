@@ -50,33 +50,40 @@ function ReportModal({ targetId, targetName, onClose }: {
   return (
     <motion.div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center px-0 sm:px-4"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <motion.div className="relative w-full sm:max-w-sm glass rounded-t-3xl sm:rounded-3xl p-6"
-        initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}>
+      <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
+      <motion.div
+        className="relative w-full sm:max-w-sm modal rounded-t-3xl sm:rounded-2xl overflow-hidden"
+        initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+        transition={{ type: 'spring', damping: 26, stiffness: 280 }}>
+
+        {/* Top accent */}
+        <div className="h-[2px] w-full" style={{ background: 'linear-gradient(90deg, transparent, rgba(231,76,60,0.55), transparent)' }} />
 
         {done ? (
-          <div className="text-center py-4">
-            <div className="text-4xl mb-3">✅</div>
-            <p className="text-white font-semibold">Report submitted</p>
-            <p className="text-white/40 text-sm mt-1">Thank you for keeping the community safe.</p>
+          <div className="text-center py-10 px-6">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(46,204,113,0.13)', border: '2px solid rgba(46,204,113,0.35)' }}>
+              <span className="text-3xl">✅</span>
+            </div>
+            <p className="text-white font-bold text-lg">Report submitted</p>
+            <p className="text-white/60 text-sm mt-2">Thank you for keeping the community safe.</p>
           </div>
         ) : (
-          <>
+          <div className="p-6">
             <h2 className="text-lg font-bold text-white mb-1">Report {targetName}</h2>
-            <p className="text-white/40 text-sm mb-5">Why are you reporting this profile?</p>
+            <p className="text-white/60 text-sm mb-5">Why are you reporting this profile?</p>
 
             <div className="flex flex-col gap-2 mb-4">
               {REPORT_REASONS.map(({ id, label, emoji }) => (
                 <button key={id} onClick={() => setReason(id)}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-left transition-all"
                   style={{
-                    background: reason === id ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.05)',
-                    border: `1px solid ${reason === id ? 'rgba(201,168,76,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                    color: reason === id ? '#C9A84C' : 'rgba(255,255,255,0.7)',
+                    background: reason === id ? 'rgba(201,168,76,0.14)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${reason === id ? 'rgba(201,168,76,0.45)' : 'rgba(255,255,255,0.09)'}`,
+                    color: reason === id ? '#C9A84C' : 'rgba(255,255,255,0.75)',
                   }}>
                   <span className="text-base">{emoji}</span>
                   {label}
-                  {reason === id && <span className="ml-auto text-xs">✓</span>}
+                  {reason === id && <span className="ml-auto text-xs font-bold" style={{ color: '#C9A84C' }}>✓</span>}
                 </button>
               ))}
             </div>
@@ -87,22 +94,24 @@ function ReportModal({ targetId, targetName, onClose }: {
                 onChange={e => setDetails(e.target.value)}
                 placeholder="Tell us more (optional)…"
                 rows={2}
-                className="w-full px-4 py-2.5 rounded-xl bg-white/[0.06] border border-white/10 text-white placeholder-white/25 text-sm resize-none mb-4 outline-none"
+                className="w-full px-4 py-2.5 rounded-xl text-white placeholder-white/30 text-sm resize-none mb-4 outline-none"
+                style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.11)' }}
               />
             )}
 
             <div className="flex gap-3">
               <button onClick={onClose}
-                className="flex-1 h-11 glass rounded-xl text-white/50 hover:text-white text-sm font-medium transition-colors">
+                className="flex-1 h-11 rounded-xl text-white/65 hover:text-white text-sm font-semibold transition-colors"
+                style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)' }}>
                 Cancel
               </button>
               <button onClick={submit} disabled={!reason || submitting}
-                className="flex-1 h-11 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
-                style={{ background: '#E74C3C', color: 'white' }}>
-                {submitting ? <Loader2 size={15} className="animate-spin mx-auto" /> : 'Submit Report'}
+                className="flex-1 h-11 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-40 flex items-center justify-center"
+                style={{ background: '#E74C3C', boxShadow: reason ? '0 4px 16px rgba(231,76,60,0.35)' : 'none' }}>
+                {submitting ? <Loader2 size={15} className="animate-spin" /> : 'Submit Report'}
               </button>
             </div>
-          </>
+          </div>
         )}
       </motion.div>
     </motion.div>
@@ -271,31 +280,50 @@ function MatchModal({ profile, onClose, onMessage }: { profile: DbProfile; onClo
   return (
     <motion.div className="fixed inset-0 z-50 flex items-center justify-center px-4"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <motion.div className="relative glass rounded-3xl p-8 text-center max-w-xs w-full"
-        initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.8, opacity: 0 }}
-        style={{ border: '1px solid rgba(201,168,76,0.3)' }}>
-        <div className="flex items-center justify-center gap-3 mb-5">
-          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#C9A84C]">
-            {profile.avatar_url
-              ? <Image src={profile.avatar_url} alt={profile.full_name} width={64} height={64} className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center text-xl font-bold" style={{ background: 'rgba(201,168,76,0.2)', color: '#C9A84C' }}>{profile.full_name.charAt(0)}</div>
-            }
+      <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
+      <motion.div
+        className="relative modal rounded-2xl w-full max-w-sm overflow-hidden"
+        initial={{ scale: 0.85, opacity: 0 }}
+        animate={{ scale: 1,    opacity: 1 }}
+        exit={{   scale: 0.85, opacity: 0 }}
+        transition={{ type: 'spring', damping: 22, stiffness: 300 }}
+        style={{ border: '1px solid rgba(201,168,76,0.25)' }}>
+
+        {/* Gold top line */}
+        <div className="h-[2px] w-full" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.65), transparent)' }} />
+
+        <div className="p-8 text-center">
+          {/* Avatars */}
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <div className="w-20 h-20 rounded-full overflow-hidden shrink-0" style={{ border: '2.5px solid #C9A84C', boxShadow: '0 0 20px rgba(201,168,76,0.35)' }}>
+              {profile.avatar_url
+                ? <Image src={profile.avatar_url} alt={profile.full_name} width={80} height={80} className="w-full h-full object-cover" />
+                : <div className="w-full h-full flex items-center justify-center text-2xl font-bold" style={{ background: 'rgba(201,168,76,0.15)', color: '#C9A84C' }}>{profile.full_name.charAt(0)}</div>
+              }
+            </div>
+            <div className="text-3xl animate-pulse">💛</div>
           </div>
-          <div className="text-3xl">💛</div>
-        </div>
-        <h2 className="text-2xl font-bold text-white mb-2">It&apos;s a Match!</h2>
-        <p className="text-white/50 text-sm mb-6">You and {profile.full_name} liked each other</p>
-        <div className="flex gap-3">
-          <button onClick={onClose}
-            className="flex-1 h-11 rounded-xl border border-white/20 text-white/70 text-sm font-medium hover:bg-white/10 transition-colors">
-            Keep swiping
-          </button>
-          <button onClick={onMessage}
-            className="flex-1 h-11 rounded-xl font-semibold text-black text-sm" style={{ background: '#C9A84C' }}>
-            Send message
-          </button>
+
+          <h2 className="text-2xl font-bold text-white mb-2">It&apos;s a Match!</h2>
+          <p className="text-white/60 text-sm mb-7">
+            You and <span className="text-white font-semibold">{profile.full_name}</span> liked each other
+          </p>
+
+          {/* Divider */}
+          <div className="h-px bg-white/[0.07] -mx-8 mb-6" />
+
+          <div className="flex gap-3">
+            <button onClick={onClose}
+              className="flex-1 h-11 rounded-xl text-white/65 hover:text-white text-sm font-semibold transition-colors"
+              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)' }}>
+              Keep swiping
+            </button>
+            <button onClick={onMessage}
+              className="flex-1 h-11 rounded-xl font-bold text-black text-sm transition-all active:scale-[0.98]"
+              style={{ background: '#C9A84C', boxShadow: '0 4px 20px rgba(201,168,76,0.40)' }}>
+              Send message
+            </button>
+          </div>
         </div>
       </motion.div>
     </motion.div>
@@ -322,54 +350,88 @@ function FilterPanel({ filters, onChange, onClose }: { filters: Filters; onChang
   return (
     <motion.div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-0 sm:px-4"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div className="relative w-full sm:max-w-sm glass rounded-t-3xl sm:rounded-3xl p-6"
-        initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2"><Filter size={18} style={{ color: '#C9A84C' }} /> Filters</h2>
-          <button onClick={() => setLocal({ onlineOnly: false, categories: [], minAge: 18, maxAge: 80 })} className="text-white/40 hover:text-white text-sm">Clear all</button>
-        </div>
-        <div className="flex items-center justify-between mb-5">
-          <span className="text-sm font-medium text-white">Online only</span>
-          <button onClick={() => setLocal(f => ({ ...f, onlineOnly: !f.onlineOnly }))}
-            className="w-12 h-6 rounded-full transition-colors relative"
-            style={{ background: local.onlineOnly ? '#C9A84C' : 'rgba(255,255,255,0.1)' }}>
-            <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all"
-              style={{ left: local.onlineOnly ? 'calc(100% - 22px)' : 2 }} />
+      <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
+      <motion.div
+        className="relative w-full sm:max-w-sm modal rounded-t-3xl sm:rounded-2xl overflow-hidden"
+        initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
+        transition={{ type: 'spring', damping: 26, stiffness: 280 }}>
+
+        {/* Top accent */}
+        <div className="h-[2px] w-full" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.55), transparent)' }} />
+
+        {/* Header */}
+        <div className="modal-header flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(201,168,76,0.14)', border: '1px solid rgba(201,168,76,0.25)' }}>
+              <Filter size={15} style={{ color: '#C9A84C' }} />
+            </div>
+            <h2 className="text-base font-bold text-white">Filters</h2>
+          </div>
+          <button
+            onClick={() => setLocal({ onlineOnly: false, categories: [], minAge: 18, maxAge: 80 })}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors hover:text-white text-white/50"
+            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            Clear all
           </button>
         </div>
-        <div className="mb-5">
-          <div className="flex justify-between text-sm mb-2">
-            <span className="font-medium text-white">Age range</span>
-            <span className="text-white/50">{local.minAge}–{local.maxAge}</span>
+
+        <div className="p-6 flex flex-col gap-6">
+          {/* Online only toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-white">Online only</p>
+              <p className="text-xs text-white/50 mt-0.5">Show only users currently online</p>
+            </div>
+            <button
+              onClick={() => setLocal(f => ({ ...f, onlineOnly: !f.onlineOnly }))}
+              className="w-12 h-6 rounded-full transition-all relative shrink-0"
+              style={{ background: local.onlineOnly ? '#C9A84C' : 'rgba(255,255,255,0.12)', boxShadow: local.onlineOnly ? '0 0 10px rgba(201,168,76,0.4)' : 'none' }}>
+              <span
+                className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all shadow-sm"
+                style={{ left: local.onlineOnly ? 'calc(100% - 22px)' : 2 }} />
+            </button>
           </div>
-          <div className="flex gap-3">
-            <input type="range" min={18} max={local.maxAge - 1} value={local.minAge}
-              onChange={e => setLocal(f => ({ ...f, minAge: +e.target.value }))} className="flex-1 accent-[#C9A84C]" />
-            <input type="range" min={local.minAge + 1} max={80} value={local.maxAge}
-              onChange={e => setLocal(f => ({ ...f, maxAge: +e.target.value }))} className="flex-1 accent-[#C9A84C]" />
+
+          {/* Age range */}
+          <div>
+            <div className="flex justify-between text-sm mb-3">
+              <span className="font-semibold text-white">Age range</span>
+              <span className="font-bold" style={{ color: '#C9A84C' }}>{local.minAge} – {local.maxAge}</span>
+            </div>
+            <div className="flex gap-3">
+              <input type="range" min={18} max={local.maxAge - 1} value={local.minAge}
+                onChange={e => setLocal(f => ({ ...f, minAge: +e.target.value }))} className="flex-1 accent-[#C9A84C]" />
+              <input type="range" min={local.minAge + 1} max={80} value={local.maxAge}
+                onChange={e => setLocal(f => ({ ...f, maxAge: +e.target.value }))} className="flex-1 accent-[#C9A84C]" />
+            </div>
           </div>
+
+          {/* Category */}
+          <div>
+            <p className="text-sm font-semibold text-white mb-3">Category</p>
+            <div className="grid grid-cols-3 gap-2">
+              {CATEGORIES.map(({ id, label, emoji }) => (
+                <button key={id} onClick={() => toggleCat(id)}
+                  className="py-2.5 px-2 rounded-xl text-xs font-semibold transition-all text-center"
+                  style={{
+                    background: local.categories.includes(id) ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${local.categories.includes(id) ? 'rgba(201,168,76,0.5)' : 'rgba(255,255,255,0.09)'}`,
+                    color: local.categories.includes(id) ? '#C9A84C' : 'rgba(255,255,255,0.65)',
+                    boxShadow: local.categories.includes(id) ? '0 0 10px rgba(201,168,76,0.15)' : 'none',
+                  }}>
+                  {emoji}<br />{label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => { onChange(local); onClose(); }}
+            className="w-full h-12 rounded-xl font-bold text-black text-sm transition-all active:scale-[0.98]"
+            style={{ background: '#C9A84C', boxShadow: '0 4px 20px rgba(201,168,76,0.35)' }}>
+            Apply Filters
+          </button>
         </div>
-        <div className="mb-6">
-          <p className="text-sm font-medium text-white mb-3">Category</p>
-          <div className="grid grid-cols-3 gap-2">
-            {CATEGORIES.map(({ id, label, emoji }) => (
-              <button key={id} onClick={() => toggleCat(id)}
-                className="p-2.5 rounded-xl text-xs font-medium transition-all border text-center"
-                style={{
-                  background: local.categories.includes(id) ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.04)',
-                  borderColor: local.categories.includes(id) ? '#C9A84C' : 'rgba(255,255,255,0.08)',
-                  color: local.categories.includes(id) ? '#C9A84C' : 'rgba(255,255,255,0.6)',
-                }}>
-                {emoji} {label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <button onClick={() => { onChange(local); onClose(); }}
-          className="w-full h-12 rounded-2xl font-semibold text-black" style={{ background: '#C9A84C' }}>
-          Apply Filters
-        </button>
       </motion.div>
     </motion.div>
   );

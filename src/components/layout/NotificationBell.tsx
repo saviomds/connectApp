@@ -171,31 +171,40 @@ export default function NotificationBell() {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 top-11 w-80 max-w-[calc(100vw-1rem)] glass rounded-2xl border border-white/10 shadow-2xl z-[60] overflow-hidden">
+        <div className="absolute right-0 top-11 w-80 max-w-[calc(100vw-1rem)] modal rounded-2xl z-[60] overflow-hidden">
+          {/* Accent line */}
+          <div className="h-[2px] w-full" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.5), transparent)' }} />
+
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
-            <p className="text-sm font-semibold text-white">Notifications</p>
-            <div className="flex items-center gap-2">
+          <div className="modal-header flex items-center justify-between px-4 py-3">
+            <p className="text-sm font-bold text-white">Notifications</p>
+            <div className="flex items-center gap-3">
               {newCount > 0 && (
                 <button
                   onClick={markAllRead}
                   disabled={markingRead}
-                  className="flex items-center gap-1 text-[11px] text-white/40 hover:text-white/70 transition-colors disabled:opacity-40">
+                  className="flex items-center gap-1 text-[11px] font-medium text-white/50 hover:text-white transition-colors disabled:opacity-40">
                   <CheckCheck size={12} /> Mark all read
                 </button>
               )}
-              <button onClick={() => setOpen(false)} className="text-white/30 hover:text-white transition-colors">
-                <X size={14} />
+              <button
+                onClick={() => setOpen(false)}
+                className="w-6 h-6 rounded-lg flex items-center justify-center text-white/40 hover:text-white transition-colors"
+                style={{ background: 'rgba(255,255,255,0.07)' }}>
+                <X size={12} />
               </button>
             </div>
           </div>
 
           {/* List */}
-          <div className="max-h-[380px] overflow-y-auto">
+          <div className="max-h-[400px] overflow-y-auto">
             {notifs.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-10">
-                <Bell size={24} className="text-white/15" />
-                <p className="text-sm text-white/30">No notifications yet</p>
+              <div className="flex flex-col items-center gap-2 py-12">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                  <Bell size={20} className="text-white/20" />
+                </div>
+                <p className="text-sm text-white/40 font-medium">No notifications yet</p>
+                <p className="text-xs text-white/25">We&apos;ll notify you when something happens</p>
               </div>
             ) : notifs.map((n, i) => {
               const meta = TYPE_META[n.type] ?? TYPE_META.match
@@ -204,10 +213,12 @@ export default function NotificationBell() {
                 <button
                   key={n.id}
                   onClick={() => handleNotifClick(n)}
-                  className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.04] ${i < notifs.length - 1 ? 'border-b border-white/[0.04]' : ''} ${!n.is_read ? 'bg-white/[0.03]' : ''}`}>
+                  className={`w-full flex items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/[0.05] ${i < notifs.length - 1 ? 'border-b border-white/[0.05]' : ''}`}
+                  style={!n.is_read ? { background: 'rgba(201,168,76,0.04)' } : {}}>
+
                   {/* Avatar / icon */}
                   <div className="w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center"
-                    style={{ background: `${meta.color}18`, border: `1px solid ${meta.color}30` }}>
+                    style={{ background: `${meta.color}20`, border: `1.5px solid ${meta.color}40` }}>
                     {n.senderAvatar
                       // eslint-disable-next-line @next/next/no-img-element
                       ? <img src={n.senderAvatar} alt="" className="w-full h-full object-cover" />
@@ -216,15 +227,15 @@ export default function NotificationBell() {
 
                   {/* Text */}
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm leading-snug break-words ${n.is_read ? 'text-white/50' : 'text-white'}`}>
+                    <p className={`text-sm leading-snug break-words font-medium ${n.is_read ? 'text-white/60' : 'text-white'}`}>
                       {notifText(n)}
                     </p>
-                    <p className="text-[11px] text-white/25 mt-0.5">{timeAgo(n.created_at)}</p>
+                    <p className="text-[11px] text-white/35 mt-1">{timeAgo(n.created_at)}</p>
                   </div>
 
                   {/* Unread dot */}
                   {!n.is_read && (
-                    <span className="w-2 h-2 rounded-full shrink-0 mt-1.5" style={{ background: meta.color }} />
+                    <span className="w-2 h-2 rounded-full shrink-0 mt-2" style={{ background: meta.color }} />
                   )}
                 </button>
               )
@@ -232,9 +243,9 @@ export default function NotificationBell() {
           </div>
 
           {notifs.length > 0 && (
-            <div className="border-t border-white/[0.06] px-4 py-2.5">
-              <p className="text-xs text-white/25 text-center">
-                {notifs.length} notifications · {newCount} unread
+            <div className="modal-header border-t-0 px-4 py-2.5" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+              <p className="text-xs text-white/35 text-center">
+                {notifs.length} notifications · <span style={{ color: newCount > 0 ? '#C9A84C' : 'inherit' }}>{newCount} unread</span>
               </p>
             </div>
           )}

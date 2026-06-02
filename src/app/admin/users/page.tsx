@@ -134,131 +134,141 @@ export default function AdminUsersPage() {
         ) : users.length === 0 ? (
           <div className="text-center py-16 text-white/30 text-sm">No users found</div>
         ) : (
-          <>
-            {/* Header */}
-            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 px-5 py-3 border-b border-white/[0.06] text-xs font-semibold uppercase tracking-widest text-white/30">
-              <span>User</span>
-              <span className="hidden sm:block">Status</span>
-              <span className="hidden sm:block">Joined</span>
-              <span>Actions</span>
-            </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] border-collapse">
+              {/* Header */}
+              <thead>
+                <tr className="border-b border-white/[0.06]">
+                  <th className="text-left px-5 py-3 text-xs font-semibold uppercase tracking-widest text-white/30 w-full">User</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30 whitespace-nowrap w-[110px]">Status</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30 whitespace-nowrap w-[100px]">Joined</th>
+                  <th className="px-5 py-3 text-xs font-semibold uppercase tracking-widest text-white/30 w-[60px]">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(u => {
+                  const busy = actionId === u.id
+                  return (
+                    <tr key={u.id} className="border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
 
-            {users.map(u => {
-              const busy = actionId === u.id
-              return (
-                <div key={u.id}
-                  className="grid grid-cols-[1fr_auto_auto_auto] gap-4 items-center px-5 py-3.5 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
+                      {/* User info */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-sm font-bold"
+                            style={{ background: 'rgba(201,168,76,0.15)', color: '#C9A84C' }}>
+                            {u.avatar_url
+                              // eslint-disable-next-line @next/next/no-img-element
+                              ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
+                              : u.full_name?.[0] ?? '?'}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-sm font-medium text-white truncate max-w-[200px]">{u.full_name || 'Unnamed'}</span>
+                              {u.is_admin     && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white shrink-0" style={{ background: '#9B6DFF' }}>ADMIN</span>}
+                              {u.is_verified  && <BadgeCheck size={12} className="fill-blue-400 text-white shrink-0" />}
+                              {u.is_premium   && <Crown size={11} style={{ color: '#C9A84C' }} className="shrink-0" />}
+                              {u.is_suspended && <Ban size={11} style={{ color: '#E74C3C' }} className="shrink-0" />}
+                            </div>
+                            <p className="text-xs text-white/40 truncate max-w-[260px]">
+                              {[u.profession, u.company, u.city].filter(Boolean).join(' · ') || u.category || '—'}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
 
-                  {/* User info */}
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center text-sm font-bold"
-                      style={{ background: 'rgba(201,168,76,0.15)', color: '#C9A84C' }}>
-                      {u.avatar_url
-                        // eslint-disable-next-line @next/next/no-img-element
-                        ? <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
-                        : u.full_name?.[0] ?? '?'}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-sm font-medium text-white truncate max-w-[140px]">{u.full_name || 'Unnamed'}</span>
-                        {u.is_admin     && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-black" style={{ background: '#9B6DFF' }}>ADMIN</span>}
-                        {u.is_verified  && <BadgeCheck size={12} className="fill-blue-400 text-white shrink-0" />}
-                        {u.is_premium   && <Crown size={11} style={{ color: '#C9A84C' }} className="shrink-0" />}
-                        {u.is_suspended && <Ban size={11} style={{ color: '#E74C3C' }} className="shrink-0" />}
-                      </div>
-                      <p className="text-xs text-white/40 truncate">
-                        {[u.profession, u.company, u.city].filter(Boolean).join(' · ') || u.category || '—'}
-                      </p>
-                    </div>
-                  </div>
+                      {/* Status */}
+                      <td className="px-4 py-3.5">
+                        <div className="flex flex-col gap-1">
+                          <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium w-fit whitespace-nowrap"
+                            style={{
+                              background: u.is_online ? 'rgba(46,204,113,0.15)' : 'rgba(255,255,255,0.06)',
+                              color: u.is_online ? '#2ECC71' : 'rgba(255,255,255,0.35)',
+                            }}>
+                            {u.is_online ? '● Online' : 'Offline'}
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-white/[0.06] text-white/35 w-fit whitespace-nowrap">
+                            {u.profile_completion}%
+                          </span>
+                        </div>
+                      </td>
 
-                  {/* Status */}
-                  <div className="hidden sm:flex items-center gap-1.5">
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                      style={{
-                        background: u.is_online ? 'rgba(46,204,113,0.15)' : 'rgba(255,255,255,0.06)',
-                        color: u.is_online ? '#2ECC71' : 'rgba(255,255,255,0.3)',
-                      }}>
-                      {u.is_online ? '● Online' : 'Offline'}
-                    </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-white/[0.06] text-white/30">
-                      {u.profile_completion}%
-                    </span>
-                  </div>
+                      {/* Joined */}
+                      <td className="px-4 py-3.5">
+                        <span className="text-xs text-white/35 whitespace-nowrap">
+                          {new Date(u.created_at).toLocaleDateString()}
+                        </span>
+                      </td>
 
-                  {/* Joined */}
-                  <span className="hidden sm:block text-xs text-white/30 whitespace-nowrap">
-                    {new Date(u.created_at).toLocaleDateString()}
-                  </span>
-
-                  {/* Action menu */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setMenuId(menuId === u.id ? null : u.id)}
-                      disabled={busy}
-                      className="w-8 h-8 glass rounded-xl flex items-center justify-center text-white/40 hover:text-white transition-colors disabled:opacity-40">
-                      {busy ? <Loader2 size={14} className="animate-spin" /> : <MoreHorizontal size={14} />}
-                    </button>
-
-                    {menuId === u.id && (
-                      <div className="absolute right-0 top-10 w-52 glass rounded-2xl overflow-hidden z-50 shadow-xl border border-white/10">
-                        {[
-                          {
-                            icon: u.is_admin ? ShieldOff : ShieldCheck,
-                            label: u.is_admin ? 'Remove Admin' : 'Make Admin',
-                            color: '#9B6DFF',
-                            onClick: () => act(u.id, { action: 'make_admin', value: !u.is_admin }),
-                          },
-                          {
-                            icon: BadgeCheck,
-                            label: u.is_verified ? 'Remove Verification' : 'Verify User',
-                            color: '#4A90E2',
-                            onClick: () => act(u.id, { action: 'verify', value: !u.is_verified }),
-                          },
-                          {
-                            icon: Crown,
-                            label: u.is_premium
-                              ? `Revoke ${u.premium_tier ?? 'Premium'}`
-                              : 'Grant Gold',
-                            color: '#C9A84C',
-                            onClick: () => act(u.id, { action: 'premium', tier: u.is_premium ? null : 'gold' }),
-                          },
-                          {
-                            icon: Crown,
-                            label: 'Grant Platinum',
-                            color: '#E8E8E8',
-                            onClick: () => act(u.id, { action: 'premium', tier: 'platinum' }),
-                          },
-                          {
-                            icon: u.is_suspended ? UserCheck : UserX,
-                            label: u.is_suspended ? 'Unsuspend' : 'Suspend',
-                            color: '#F39C12',
-                            onClick: () => act(u.id, { action: 'suspend', value: !u.is_suspended }),
-                          },
-                          {
-                            icon: Trash2,
-                            label: 'Delete Account',
-                            color: '#E74C3C',
-                            onClick: () => { setMenuId(null); setDeleteTarget(u) },
-                            danger: true,
-                          },
-                        ].map(({ icon: Icon, label, color, onClick, danger }) => (
-                          <button key={label} onClick={onClick}
-                            className={clsx(
-                              'w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors',
-                              danger ? 'hover:bg-red-500/10' : 'hover:bg-white/[0.05]'
-                            )}>
-                            <Icon size={14} style={{ color }} />
-                            <span style={{ color: danger ? '#E74C3C' : 'rgba(255,255,255,0.75)' }}>{label}</span>
+                      {/* Action menu */}
+                      <td className="px-5 py-3.5">
+                        <div className="relative flex justify-center">
+                          <button
+                            onClick={() => setMenuId(menuId === u.id ? null : u.id)}
+                            disabled={busy}
+                            className="w-8 h-8 glass rounded-xl flex items-center justify-center text-white/40 hover:text-white transition-colors disabled:opacity-40">
+                            {busy ? <Loader2 size={14} className="animate-spin" /> : <MoreHorizontal size={14} />}
                           </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </>
+
+                          {menuId === u.id && (
+                            <div className="absolute right-0 top-10 w-52 modal rounded-xl overflow-hidden z-50 shadow-xl">
+                              {[
+                                {
+                                  icon: u.is_admin ? ShieldOff : ShieldCheck,
+                                  label: u.is_admin ? 'Remove Admin' : 'Make Admin',
+                                  color: '#9B6DFF',
+                                  onClick: () => act(u.id, { action: 'make_admin', value: !u.is_admin }),
+                                },
+                                {
+                                  icon: BadgeCheck,
+                                  label: u.is_verified ? 'Remove Verification' : 'Verify User',
+                                  color: '#4A90E2',
+                                  onClick: () => act(u.id, { action: 'verify', value: !u.is_verified }),
+                                },
+                                {
+                                  icon: Crown,
+                                  label: u.is_premium ? `Revoke ${u.premium_tier ?? 'Premium'}` : 'Grant Gold',
+                                  color: '#C9A84C',
+                                  onClick: () => act(u.id, { action: 'premium', tier: u.is_premium ? null : 'gold' }),
+                                },
+                                {
+                                  icon: Crown,
+                                  label: 'Grant Platinum',
+                                  color: '#E8E8E8',
+                                  onClick: () => act(u.id, { action: 'premium', tier: 'platinum' }),
+                                },
+                                {
+                                  icon: u.is_suspended ? UserCheck : UserX,
+                                  label: u.is_suspended ? 'Unsuspend' : 'Suspend',
+                                  color: '#F39C12',
+                                  onClick: () => act(u.id, { action: 'suspend', value: !u.is_suspended }),
+                                },
+                                {
+                                  icon: Trash2,
+                                  label: 'Delete Account',
+                                  color: '#E74C3C',
+                                  onClick: () => { setMenuId(null); setDeleteTarget(u) },
+                                  danger: true,
+                                },
+                              ].map(({ icon: Icon, label, color, onClick, danger }) => (
+                                <button key={label} onClick={onClick}
+                                  className={clsx(
+                                    'w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors border-b border-white/[0.05] last:border-0',
+                                    danger ? 'hover:bg-red-500/10' : 'hover:bg-white/[0.05]'
+                                  )}>
+                                  <Icon size={14} style={{ color }} />
+                                  <span style={{ color: danger ? '#E74C3C' : 'rgba(255,255,255,0.80)' }}>{label}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

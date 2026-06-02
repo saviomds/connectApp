@@ -5,6 +5,15 @@ const PROTECTED   = ['/discover', '/matches', '/messages', '/profile', '/setting
 const AUTH_ROUTES = ['/login', '/signup', '/verify', '/forgot-password', '/reset-password']
 const ADMIN_ROUTES = ['/admin']
 
+// Copy any refreshed Supabase auth cookies into a redirect so tokens are never dropped.
+function redirectWithCookies(url: URL, supabaseResponse: NextResponse): NextResponse {
+  const redirect = NextResponse.redirect(url)
+  supabaseResponse.cookies.getAll().forEach(({ name, value, ...rest }) => {
+    redirect.cookies.set(name, value, rest as Parameters<typeof redirect.cookies.set>[2])
+  })
+  return redirect
+}
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -15,6 +24,7 @@ export async function middleware(request: NextRequest) {
       cookies: {
         getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
+          // request.cookies only accepts (name, value); options go on the response cookies below
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
@@ -25,7 +35,8 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session — required to keep tokens alive
+  // IMPORTANT: getUser() refreshes the access token when expired using the refresh token.
+  // The refreshed tokens land in supabaseResponse — always return it (or copy its cookies).
   const { data: { user } } = await supabase.auth.getUser()
 
   const path = request.nextUrl.pathname
@@ -38,13 +49,15 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('next', path)
+    // No auth cookies to carry (session is gone); plain redirect is fine.
     return NextResponse.redirect(url)
   }
 
   if (isAuthRoute && user && !path.startsWith('/reset-password') && !path.startsWith('/verify')) {
     const url = request.nextUrl.clone()
     url.pathname = '/discover'
-    return NextResponse.redirect(url)
+    // Carry refreshed tokens so the new cookies are not dropped on this redirect.
+    return redirectWithCookies(url, supabaseResponse)
   }
 
   if (isAdminRoute && !user) {
