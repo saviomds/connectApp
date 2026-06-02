@@ -9,7 +9,8 @@ import {
 } from 'framer-motion';
 import {
   MapPin, BadgeCheck, Heart, X, Star, SlidersHorizontal, RotateCcw,
-  Filter, MoreHorizontal, ShieldBan, Flag, Loader2,
+  Filter, MoreHorizontal, ShieldBan, Flag, Loader2, Zap, MessageSquareQuote,
+  Crown,
 } from 'lucide-react';
 import type { DbProfile } from '@/types/database';
 
@@ -246,6 +247,13 @@ function SwipeCard({ profile, isTop, stackOffset, onSwipe }: {
               <span className="text-[10px] font-bold text-blue-300">Verified</span>
             </div>
           )}
+          {profile.boosted_until && new Date(profile.boosted_until) > new Date() && (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full shrink-0"
+              style={{ background: 'rgba(249,115,22,0.25)', border: '1px solid rgba(249,115,22,0.5)' }}>
+              <Zap size={10} className="text-orange-300 fill-orange-300 shrink-0" />
+              <span className="text-[10px] font-bold text-orange-300">Boosted</span>
+            </div>
+          )}
         </div>
         <p className="text-white/70 text-sm mb-1.5">
           {profile.profession}{profile.company ? ` · ${profile.company}` : ''}
@@ -256,11 +264,22 @@ function SwipeCard({ profile, isTop, stackOffset, onSwipe }: {
             {[profile.city, profile.country].filter(Boolean).join(', ')}
           </div>
         )}
-        {profile.bio && (
+        {/* Icebreaker prompt — shown instead of bio when available */}
+        {profile.prompts && profile.prompts.length > 0 ? (
+          <div className="mb-3 px-3 py-2.5 rounded-xl"
+            style={{ background: 'rgba(201,168,76,0.10)', border: '1px solid rgba(201,168,76,0.22)' }}>
+            <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: 'rgba(201,168,76,0.7)' }}>
+              {profile.prompts[0].question}
+            </p>
+            <p className="text-white/80 text-xs leading-relaxed line-clamp-2 italic">
+              &ldquo;{profile.prompts[0].answer}&rdquo;
+            </p>
+          </div>
+        ) : profile.bio ? (
           <p className="text-white/60 text-xs mb-3 line-clamp-2 leading-relaxed italic">
             &quot;{profile.bio}&quot;
           </p>
-        )}
+        ) : null}
         {profile.interests && profile.interests.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {profile.interests.slice(0, 3).map((tag) => (
@@ -437,6 +456,57 @@ function FilterPanel({ filters, onChange, onClose }: { filters: Filters; onChang
   );
 }
 
+// ─── Daily limit paywall modal ────────────────────────────────
+function DailyLimitModal({ onClose }: { onClose: () => void }) {
+  return (
+    <motion.div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <div className="absolute inset-0 bg-black/85 backdrop-blur-xl" onClick={onClose} />
+      <motion.div
+        className="relative w-full sm:max-w-sm mx-0 sm:mx-4 overflow-hidden rounded-t-[2rem] sm:rounded-[2rem] border border-white/10 p-6"
+        style={{ background: 'rgba(15,15,20,0.98)' }}
+        initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 60, opacity: 0 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+        onClick={e => e.stopPropagation()}
+      >
+        <button onClick={onClose}
+          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/[0.07] flex items-center justify-center text-white/40 hover:text-white transition-colors border border-white/10">
+          <X size={16} />
+        </button>
+
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
+          style={{ background: 'linear-gradient(135deg, rgba(201,168,76,0.2), rgba(249,115,22,0.15))', border: '1px solid rgba(201,168,76,0.3)' }}>
+          <Heart size={28} style={{ color: '#C9A84C' }} />
+        </div>
+
+        <h2 className="text-xl font-bold text-white text-center mb-2">Daily Likes Used Up</h2>
+        <p className="text-white/45 text-sm text-center leading-relaxed mb-6">
+          Free members get <span className="text-white/70 font-semibold">10 likes per day</span>. Upgrade to Gold or Platinum for unlimited swiping.
+        </p>
+
+        <div className="flex flex-col gap-2.5 mb-6">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+            style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)' }}>
+            <Crown size={18} style={{ color: '#C9A84C' }} className="shrink-0" />
+            <div>
+              <p className="text-white text-sm font-semibold">Gold – $29/mo</p>
+              <p className="text-white/40 text-xs">Unlimited likes + see who liked you</p>
+            </div>
+            <Link href="/premium" onClick={onClose}
+              className="ml-auto shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold text-black"
+              style={{ background: '#C9A84C' }}>
+              Upgrade
+            </Link>
+          </div>
+        </div>
+
+        <p className="text-center text-white/25 text-xs">Resets at midnight UTC</p>
+      </motion.div>
+    </motion.div>
+  )
+}
+
 // ─── Main ─────────────────────────────────────────────────────
 interface Props { initialProfiles: DbProfile[]; currentUserId: string }
 
@@ -450,6 +520,23 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
   const [matchedProfile, setMatchedProfile] = useState<DbProfile | null>(null);
   const [swiped, setSwiped]           = useState<Set<string>>(new Set());
   const [fetching, setFetching]       = useState(false);
+
+  // Daily swipe limit
+  const [remainingSwipes, setRemainingSwipes] = useState<number | null>(null);
+  const [isPremium, setIsPremium]             = useState(false);
+  const [showLimit, setShowLimit]             = useState(false);
+
+  // Fetch today's remaining swipe count on mount
+  useEffect(() => {
+    fetch('/api/swipes')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!d) return
+        setIsPremium(d.isPremium)
+        setRemainingSwipes(d.isPremium ? null : d.remainingSwipes)
+      })
+      .catch(() => {})
+  }, [])
 
   // Re-fetch profiles whenever filters change
   const prevFiltersRef = useRef(filters);
@@ -504,14 +591,37 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
 
   const swipe = useCallback(async (dir: 'like' | 'pass' | 'super_like') => {
     if (!top) return;
+
+    // Guard: enforce free daily limit on the client as well
+    if ((dir === 'like' || dir === 'super_like') && !isPremium && remainingSwipes === 0) {
+      setShowLimit(true);
+      return;
+    }
+
     setFlash(dir); setLastSwiped({ profile: top, dir }); setSwiped(prev => new Set([...prev, top.id]));
     setTimeout(() => setFlash(null), 400);
     try {
-      const res = await fetch('/api/swipes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target_id: top.id, direction: dir }) });
-      if (res.ok) { const { matched } = await res.json(); if (matched) setMatchedProfile(top); }
+      const res = await fetch('/api/swipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_id: top.id, direction: dir }),
+      });
+      if (res.status === 429) {
+        setRemainingSwipes(0);
+        setShowLimit(true);
+        // Un-swipe the card visually
+        setSwiped(prev => { const n = new Set(prev); n.delete(top.id); return n; });
+        return;
+      }
+      if (res.ok) {
+        const { matched, remainingSwipes: rem, limitReached } = await res.json();
+        if (matched) setMatchedProfile(top);
+        if (rem !== null && rem !== undefined) setRemainingSwipes(rem);
+        if (limitReached) setShowLimit(true);
+      }
     } catch { /* silent */ }
     if (deck.length <= 3) fetchMore();
-  }, [top, deck.length, fetchMore]);
+  }, [top, deck.length, fetchMore, isPremium, remainingSwipes]);
 
   async function blockTopCard() {
     if (!top) return;
@@ -538,6 +648,19 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
           <p className="text-white/35 text-xs">{deck.length} profiles{filters.onlineOnly || filters.categories.length > 0 ? ' (filtered)' : ' nearby'}</p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Daily swipe counter chip */}
+          {!isPremium && remainingSwipes !== null && (
+            <button onClick={() => remainingSwipes === 0 ? setShowLimit(true) : undefined}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all"
+              style={{
+                background: remainingSwipes <= 2 ? 'rgba(231,76,60,0.15)' : 'rgba(46,204,113,0.12)',
+                border: `1px solid ${remainingSwipes <= 2 ? 'rgba(231,76,60,0.35)' : 'rgba(46,204,113,0.3)'}`,
+                color: remainingSwipes <= 2 ? '#E74C3C' : '#2ECC71',
+              }}>
+              <Heart size={10} className={remainingSwipes <= 2 ? 'fill-red-400' : 'fill-green-400'} />
+              {remainingSwipes === 0 ? 'No likes left' : `${remainingSwipes} left`}
+            </button>
+          )}
           <Link href="/profile" className="flex items-center gap-2 glass px-3 py-1.5 rounded-full hover:bg-white/10 transition-colors">
             <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-black shrink-0" style={{ background: '#C9A84C' }}>
               {currentUserId.charAt(0).toUpperCase()}
@@ -685,6 +808,9 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
       </AnimatePresence>
       <AnimatePresence>
         {reportTarget && <ReportModal targetId={reportTarget.id} targetName={reportTarget.full_name} onClose={() => setReportTarget(null)} />}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showLimit && <DailyLimitModal onClose={() => setShowLimit(false)} />}
       </AnimatePresence>
     </div>
   );

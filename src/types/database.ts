@@ -7,6 +7,11 @@ export type VerificationStatus = 'none' | 'pending' | 'approved' | 'rejected'
 /** Categories that require professional access + ID verification */
 export const GATED_CATEGORIES: UserCategory[] = ['professional', 'divorced']
 
+export interface IcebreakerPrompt {
+  question: string
+  answer: string
+}
+
 export interface DbProfile {
   id: string
   full_name: string
@@ -32,6 +37,8 @@ export interface DbProfile {
   last_seen_at: string
   onboarding_completed: boolean
   profile_completion: number
+  boosted_until: string | null
+  prompts: IcebreakerPrompt[]
   created_at: string
   updated_at: string
 }
@@ -62,6 +69,7 @@ export interface DbMatch {
   user1_id: string
   user2_id: string
   created_at: string
+  expires_at: string | null
 }
 
 export interface DbConversation {
@@ -77,6 +85,7 @@ export interface DbMessage {
   sender_id: string
   content: string
   is_seen: boolean
+  read_at: string | null
   created_at: string
 }
 

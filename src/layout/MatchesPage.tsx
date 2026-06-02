@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   MessageCircle, Heart, MapPin, BadgeCheck, MoreHorizontal,
   UserMinus, ShieldBan, Flag, Loader2, Star, X, Sparkles, ChevronRight,
-  RefreshCw, Lock, Crown, ShieldCheck,
+  RefreshCw, Lock, Crown, ShieldCheck, Clock,
 } from 'lucide-react'
 import ConfirmModal from '@/components/ConfirmModal'
 
@@ -106,7 +106,31 @@ interface MatchItem {
   id: string
   conversationId: string | null
   created_at: string
+  expires_at: string | null
   profile: ProfileMeta
+}
+
+// ─── Expiry countdown hook ─────────────────────────────────────
+function useExpiry(expiresAt: string | null) {
+  const [label, setLabel] = useState<string | null>(null)
+  const [urgent, setUrgent] = useState(false)
+
+  useEffect(() => {
+    if (!expiresAt) return
+    function update() {
+      const diff = new Date(expiresAt!).getTime() - Date.now()
+      if (diff <= 0) { setLabel('Expired'); return }
+      const h = Math.floor(diff / 3_600_000)
+      const m = Math.floor((diff % 3_600_000) / 60_000)
+      setUrgent(diff < 3_600_000) // under 1h = urgent
+      setLabel(h > 0 ? `${h}h ${m}m` : `${m}m`)
+    }
+    update()
+    const id = setInterval(update, 60_000)
+    return () => clearInterval(id)
+  }, [expiresAt])
+
+  return { label, urgent }
 }
 
 interface LikedYouItem {
@@ -471,6 +495,7 @@ function MatchCard({ match, onRemove }: { match: MatchItem; onRemove: (id: strin
   const [confirm, setConfirm]       = useState<'unmatch' | 'block' | null>(null)
   const p = match.profile
   const isNew = !match.conversationId
+  const { label: expiryLabel, urgent: expiryUrgent } = useExpiry(match.expires_at)
 
   async function unmatch() {
     setLoading(true)
@@ -518,6 +543,16 @@ function MatchCard({ match, onRemove }: { match: MatchItem; onRemove: (id: strin
                 <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold backdrop-blur-sm"
                   style={{ background: 'rgba(201,168,76,0.35)', color: '#fde68a', border: '1px solid rgba(201,168,76,0.5)' }}>
                   <Sparkles size={9} /> New
+                </span>
+              )}
+              {expiryLabel && expiryLabel !== 'Expired' && (
+                <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold backdrop-blur-sm"
+                  style={{
+                    background: expiryUrgent ? 'rgba(231,76,60,0.40)' : 'rgba(0,0,0,0.45)',
+                    color: expiryUrgent ? '#fca5a5' : 'rgba(255,255,255,0.55)',
+                    border: `1px solid ${expiryUrgent ? 'rgba(231,76,60,0.6)' : 'rgba(255,255,255,0.15)'}`,
+                  }}>
+                  <Clock size={9} /> {expiryLabel}
                 </span>
               )}
             </div>

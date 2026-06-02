@@ -26,11 +26,13 @@ export async function GET(request: Request) {
 
   const excludeIds = [...new Set([...swipedIds, ...blockedIds, user.id])]
 
+  const now = new Date().toISOString()
+
   let query = supabase
     .from('profiles')
     .select('*')
     .eq('onboarding_completed', true)
-    .eq('is_suspended', false)          // never show suspended users
+    .eq('is_suspended', false)
     .not('id', 'in', `(${excludeIds.join(',')})`)
     .gte('age', minAge)
     .lte('age', maxAge)
@@ -42,5 +44,16 @@ export async function GET(request: Request) {
   const { data, error } = await query
   if (error) return Response.json({ error: error.message }, { status: 500 })
 
-  return Response.json(data ?? [])
+  const profiles = data ?? []
+
+  // Sort: boosted profiles first (boosted_until > now), then the rest
+  profiles.sort((a, b) => {
+    const aBoost = a.boosted_until && new Date(a.boosted_until) > new Date(now)
+    const bBoost = b.boosted_until && new Date(b.boosted_until) > new Date(now)
+    if (aBoost && !bBoost) return -1
+    if (!aBoost && bBoost) return  1
+    return 0
+  })
+
+  return Response.json(profiles)
 }

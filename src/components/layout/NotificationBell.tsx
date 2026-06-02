@@ -114,6 +114,19 @@ export default function NotificationBell() {
           const enriched = await enrichNotif(raw)
           setNotifs(prev => [enriched, ...prev].slice(0, 50))
           setNewCount(c => c + 1)
+
+          // Show system notification when tab is in background
+          if (document.hidden && 'serviceWorker' in navigator) {
+            const meta = TYPE_META[enriched.type as keyof typeof TYPE_META] ?? TYPE_META.match
+            navigator.serviceWorker.ready.then(reg => {
+              reg.active?.postMessage({
+                type: 'SHOW_NOTIFICATION',
+                title: `Vibro — ${meta.label}`,
+                body: notifText(enriched),
+                url: meta.path(enriched.data),
+              })
+            }).catch(() => {})
+          }
         }
       )
       .subscribe()

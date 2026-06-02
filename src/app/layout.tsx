@@ -5,6 +5,7 @@ import { Suspense } from 'react'
 import { Navbar } from '@/components/layout/Navbar'
 import { getCachedUser } from '@/lib/supabase/server'
 import PresenceTracker from '@/components/PresenceTracker'
+import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
 
@@ -62,6 +63,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Navbar />
         </Suspense>
         {user && <PresenceTracker />}
+        <ServiceWorkerRegistrar />
         {children}
       </body>
     </html>
