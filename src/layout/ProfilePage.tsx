@@ -83,7 +83,7 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen pt-nav pb-28 md:pb-12">
+    <div className="min-h-screen pt-nav pb-nav-bottom">
 
       {/* ── Cover banner — starts below the fixed navbar ── */}
       <div className="relative h-36 sm:h-44 overflow-hidden"

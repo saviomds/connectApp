@@ -102,7 +102,7 @@ export default function PremiumPage() {
   };
 
   return (
-    <div className="min-h-screen pt-nav pb-28 md:pb-12 px-4">
+    <div className="min-h-screen pt-nav pb-nav-bottom px-4">
       <div className="max-w-5xl mx-auto">
 
         <div className="text-center mb-10">

@@ -51,12 +51,22 @@
 
 :root {
   color-scheme: dark;
-  /* Total height of the fixed top navbar (header h-16 + device status bar) */
-  --nav-h: calc(4rem + env(safe-area-inset-top, 0px));
+  /* Fixed top navbar: 64px header + device status bar */
+  --nav-h:        calc(4rem + env(safe-area-inset-top,    0px));
+  /* Fixed bottom nav: 60px bar + home indicator */
+  --bottom-nav-h: calc(3.75rem + env(safe-area-inset-bottom, 0px));
 }
 
-/* Padding-top that clears the full navbar height including safe area */
+/* Top clearance — clears the fixed top navbar */
 .pt-nav { padding-top: var(--nav-h); }
+
+/* Bottom clearance — clears the fixed bottom nav on mobile */
+.pb-nav-bottom {
+  padding-bottom: calc(var(--bottom-nav-h) + 1rem); /* +1rem breathing room */
+}
+@media (min-width: 768px) {
+  .pb-nav-bottom { padding-bottom: 3rem; }
+}
 
 * {
   box-sizing: border-box;

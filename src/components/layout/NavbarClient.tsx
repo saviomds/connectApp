@@ -115,33 +115,62 @@ export default function NavbarClient({ userName, avatarUrl, unreadCount, likedYo
         </div>
       </header>
 
-      {/* ── Mobile bottom nav ── */}
+      {/* ── Mobile bottom nav (Instagram-style) ── */}
       {showAppNav && (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
-          style={{ background: 'rgba(10,10,11,0.92)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <div className="flex items-center px-1 py-1 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))]">
+        <nav
+          className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+          style={{
+            background: '#0A0A0B',
+            borderTop: '1px solid rgba(255,255,255,0.08)',
+            /* flush with screen — no gap, no float */
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          }}
+        >
+          <div className="flex items-center h-[60px] px-2">
             {navItems.map(({ href, label, icon: Icon, badge }) => {
               const active = pathname.startsWith(href);
               return (
                 <Link
                   key={href}
                   href={href}
-                  className={clsx(
-                    'flex-1 flex flex-col items-center gap-0.5 py-2 rounded-2xl transition-colors relative',
-                    active ? 'text-gold' : 'text-white/35 hover:text-white/70'
-                  )}
+                  className="flex-1 flex flex-col items-center justify-center gap-[3px] h-full relative select-none"
                 >
-                  <div className="relative">
-                    <Icon size={21} strokeWidth={active ? 2.2 : 1.7} />
+                  {/* Icon wrapper */}
+                  <div className="relative flex items-center justify-center">
+                    {/* Active pill background */}
+                    {active && (
+                      <span
+                        className="absolute inset-[-6px_-10px] rounded-2xl"
+                        style={{ background: 'rgba(201,168,76,0.10)' }}
+                      />
+                    )}
+                    <Icon
+                      size={22}
+                      strokeWidth={active ? 2.3 : 1.6}
+                      className={clsx(
+                        'relative transition-all duration-150',
+                        active ? 'text-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.5)]' : 'text-white/40'
+                      )}
+                    />
+                    {/* Badge */}
                     {badge > 0 && (
-                      <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full text-[8px] font-bold text-white flex items-center justify-center animate-pop"
-                        style={{ background: '#E8637A' }}>
+                      <span
+                        className="absolute -top-1.5 -right-2.5 min-w-[15px] h-[15px] px-[3px] rounded-full text-[8px] font-black text-white flex items-center justify-center animate-pop leading-none"
+                        style={{ background: '#E8637A', boxShadow: '0 0 0 2px #0A0A0B' }}
+                      >
                         {badge > 9 ? '9+' : badge}
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] font-medium leading-none">{label}</span>
-                  {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-gold rounded-full" />}
+                  {/* Label */}
+                  <span
+                    className={clsx(
+                      'text-[10px] font-medium leading-none transition-all duration-150',
+                      active ? 'text-gold' : 'text-white/30'
+                    )}
+                  >
+                    {label}
+                  </span>
                 </Link>
               );
             })}

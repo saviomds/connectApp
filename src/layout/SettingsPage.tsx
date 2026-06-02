@@ -94,7 +94,7 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
 
   // ── Password section ──────────────────────────────────────────
   if (section === 'password') return (
-    <div className="min-h-screen pt-nav pb-28 md:pb-12 px-4">
+    <div className="min-h-screen pt-nav pb-nav-bottom px-4">
       <div className="max-w-lg mx-auto">
         <button onClick={() => setSection('main')} className="flex items-center gap-2 text-white/50 hover:text-white mb-6 transition-colors">
           <ArrowLeft size={18} /> Back
@@ -141,7 +141,7 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
 
   // ── Delete section ────────────────────────────────────────────
   if (section === 'delete') return (
-    <div className="min-h-screen pt-nav pb-28 md:pb-12 px-4">
+    <div className="min-h-screen pt-nav pb-nav-bottom px-4">
       <div className="max-w-lg mx-auto">
         <button onClick={() => setSection('main')} className="flex items-center gap-2 text-white/50 hover:text-white mb-6 transition-colors">
           <ArrowLeft size={18} /> Back
@@ -186,7 +186,7 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
   }
 
   return (
-    <div className="min-h-screen pt-nav pb-28 md:pb-12 px-4">
+    <div className="min-h-screen pt-nav pb-nav-bottom px-4">
       <div className="max-w-lg mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <Link href="/profile" className="text-white/50 hover:text-white transition-colors">

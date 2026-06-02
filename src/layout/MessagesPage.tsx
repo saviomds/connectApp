@@ -59,7 +59,7 @@ export default async function MessagesPage() {
     });
 
   return (
-    <div className="min-h-screen pt-nav pb-28 md:pb-12 px-4">
+    <div className="min-h-screen pt-nav pb-nav-bottom px-4">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-5">
           <h1 className="text-2xl font-bold text-white">Messages</h1>
