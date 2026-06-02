@@ -45,7 +45,9 @@ export const metadata: Metadata = {
 // Thin static skeleton shown while Navbar resolves — prevents layout shift
 function NavbarShell() {
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 h-16 glass border-b border-white/[0.06]" />
+    <div className="fixed top-0 left-0 right-0 z-50 pt-safe glass border-b border-white/[0.06]">
+      <div className="h-16" />
+    </div>
   )
 }
 

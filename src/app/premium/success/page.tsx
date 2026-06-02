@@ -16,7 +16,7 @@ function SuccessContent() {
   }, [sessionId, router])
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 pt-16">
+    <div className="min-h-screen flex items-center justify-center px-4 pt-nav">
       <div className="w-full max-w-md text-center animate-fade-up">
         <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6"
           style={{ background: 'rgba(201,168,76,0.15)', border: '2px solid rgba(201,168,76,0.4)' }}>

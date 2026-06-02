@@ -1,6 +1,6 @@
 export default function DiscoverLoading() {
   return (
-    <div className="min-h-screen pt-16 flex items-center justify-center px-4">
+    <div className="min-h-screen pt-nav flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         {/* Card skeleton */}
         <div className="glass rounded-3xl overflow-hidden animate-pulse">

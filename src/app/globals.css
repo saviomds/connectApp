@@ -51,7 +51,12 @@
 
 :root {
   color-scheme: dark;
+  /* Total height of the fixed top navbar (header h-16 + device status bar) */
+  --nav-h: calc(4rem + env(safe-area-inset-top, 0px));
 }
+
+/* Padding-top that clears the full navbar height including safe area */
+.pt-nav { padding-top: var(--nav-h); }
 
 * {
   box-sizing: border-box;

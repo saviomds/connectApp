@@ -83,9 +83,9 @@ export default async function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen pt-16 pb-28 md:pb-12">
+    <div className="min-h-screen pt-nav pb-28 md:pb-12">
 
-      {/* ── Cover banner — starts below the fixed navbar (pt-16) ── */}
+      {/* ── Cover banner — starts below the fixed navbar ── */}
       <div className="relative h-36 sm:h-44 overflow-hidden"
         style={{ background: 'linear-gradient(135deg, rgba(201,168,76,0.4) 0%, rgba(155,109,255,0.3) 40%, rgba(74,144,226,0.35) 80%, rgba(0,212,170,0.2) 100%)' }}>
         {/* Noise texture */}

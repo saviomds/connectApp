@@ -27,13 +27,13 @@ export default function AdminSetupPage() {
   }
 
   if (!info) return (
-    <div className="min-h-screen flex items-center justify-center pt-16">
+    <div className="min-h-screen flex items-center justify-center pt-nav">
       <div className="w-6 h-6 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
     </div>
   )
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 pt-16">
+    <div className="min-h-screen flex items-center justify-center px-4 pt-nav">
       <div className="w-full max-w-md animate-fade-up">
 
         <div className="text-center mb-8">

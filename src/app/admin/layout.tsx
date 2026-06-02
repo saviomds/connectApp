@@ -7,9 +7,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!admin) redirect('/admin-setup')
 
   return (
-    <div className="min-h-screen pt-16 flex">
+    <div className="min-h-screen pt-nav flex">
       <AdminNav email={admin.email ?? ''} />
-      <main className="flex-1 md:ml-56 px-4 md:px-8 pt-16 md:pt-8 pb-28 md:pb-12">
+      <main className="flex-1 md:ml-56 px-4 md:px-8 pt-nav md:pt-8 pb-28 md:pb-12">
         {children}
       </main>
     </div>

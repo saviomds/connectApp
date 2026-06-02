@@ -1,6 +1,6 @@
 export default function ChatLoading() {
   return (
-    <div className="flex flex-col h-screen pt-16">
+    <div className="flex flex-col h-screen pt-nav">
       {/* Header skeleton */}
       <div className="glass border-b border-white/[0.06] px-4 py-3 flex items-center gap-3 shrink-0 animate-pulse">
         <div className="w-8 h-8 rounded-xl bg-white/[0.06]" />

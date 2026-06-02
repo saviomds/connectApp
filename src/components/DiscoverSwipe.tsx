@@ -530,7 +530,7 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
   }
 
   return (
-    <div className="h-screen flex flex-col pt-16 pb-16 md:pb-0 overflow-hidden">
+    <div className="h-screen flex flex-col pt-nav pb-16 md:pb-0 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 shrink-0">
         <div>

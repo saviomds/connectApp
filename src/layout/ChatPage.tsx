@@ -654,14 +654,14 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
 
   if (loading) {
     return (
-      <div className="flex flex-col h-screen pt-16 items-center justify-center">
+      <div className="flex flex-col h-screen pt-nav items-center justify-center">
         <Loader2 size={22} className="animate-spin text-white/30" />
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-screen pt-16 pb-16 md:pb-0" onClick={() => setHeaderMenuOpen(false)}>
+    <div className="flex flex-col h-screen pt-nav pb-16 md:pb-0" onClick={() => setHeaderMenuOpen(false)}>
 
       {/* ── Header ── */}
       <div className="glass border-b border-white/[0.06] px-4 py-3 flex items-center gap-3 shrink-0 z-10">

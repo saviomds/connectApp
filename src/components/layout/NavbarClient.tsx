@@ -31,8 +31,8 @@ export default function NavbarClient({ userName, avatarUrl, unreadCount, likedYo
   return (
     <>
       {/* ── Top bar ── */}
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/[0.06]">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 h-16">
+      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/[0.06] pt-safe">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 min-h-16 h-16">
           {/* Logo */}
           <Link href={showAppNav ? '/discover' : '/'} className="flex items-center gap-2 group">
             <div className="w-8 h-8 rounded-xl bg-gold flex items-center justify-center shadow-gold group-hover:shadow-gold-lg transition-all shrink-0">

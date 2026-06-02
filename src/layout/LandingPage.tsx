@@ -47,7 +47,7 @@ const AVATARS = [
 
 export default function LandingPage() {
   return (
-    <main className="pt-16">
+    <main className="pt-nav">
 
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden">
