@@ -314,8 +314,9 @@ function StoryPreviewModal({
     setTimeout(() => {
       fetch('/api/matches')
         .then(r => r.json())
-        .then((ms: MatchItem[]) => {
-          const m = ms.find(m => m.profile.id === p.id)
+        .then((ms: unknown) => {
+          if (!Array.isArray(ms)) return
+          const m = (ms as MatchItem[]).find(m => m.profile.id === p.id)
           if (m?.conversationId) setNewConvId(m.conversationId)
         })
     }, 600)
