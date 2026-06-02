@@ -6,6 +6,7 @@ import {
   ChevronLeft, ChevronRight, Loader2, MoreHorizontal, ShieldCheck, ShieldOff,
 } from 'lucide-react'
 import { clsx } from 'clsx'
+import ConfirmModal from '@/components/ConfirmModal'
 
 interface AdminUser {
   id: string
@@ -34,14 +35,15 @@ const FILTERS = [
 ]
 
 export default function AdminUsersPage() {
-  const [users, setUsers]       = useState<AdminUser[]>([])
-  const [total, setTotal]       = useState(0)
-  const [page, setPage]         = useState(1)
-  const [search, setSearch]     = useState('')
-  const [filter, setFilter]     = useState('all')
-  const [loading, setLoading]   = useState(true)
-  const [actionId, setActionId] = useState<string | null>(null)
-  const [menuId, setMenuId]     = useState<string | null>(null)
+  const [users, setUsers]           = useState<AdminUser[]>([])
+  const [total, setTotal]           = useState(0)
+  const [page, setPage]             = useState(1)
+  const [search, setSearch]         = useState('')
+  const [filter, setFilter]         = useState('all')
+  const [loading, setLoading]       = useState(true)
+  const [actionId, setActionId]     = useState<string | null>(null)
+  const [menuId, setMenuId]         = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null)
 
   const pageSize = 20
 
@@ -76,8 +78,9 @@ export default function AdminUsersPage() {
     setActionId(null)
   }
 
-  async function deleteUser(id: string) {
-    if (!confirm('Permanently delete this user? This cannot be undone.')) return
+  async function deleteUser() {
+    if (!deleteTarget) return
+    const id = deleteTarget.id
     setActionId(id)
     setMenuId(null)
     const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' })
@@ -86,6 +89,7 @@ export default function AdminUsersPage() {
       setTotal(t => t - 1)
     }
     setActionId(null)
+    setDeleteTarget(null)
   }
 
   const totalPages = Math.ceil(total / pageSize)
@@ -235,7 +239,7 @@ export default function AdminUsersPage() {
                             icon: Trash2,
                             label: 'Delete Account',
                             color: '#E74C3C',
-                            onClick: () => deleteUser(u.id),
+                            onClick: () => { setMenuId(null); setDeleteTarget(u) },
                             danger: true,
                           },
                         ].map(({ icon: Icon, label, color, onClick, danger }) => (
@@ -276,6 +280,17 @@ export default function AdminUsersPage() {
       )}
 
       {menuId && <div className="fixed inset-0 z-40" onClick={() => setMenuId(null)} />}
+
+      <ConfirmModal
+        open={!!deleteTarget}
+        title={`Delete ${deleteTarget?.full_name ?? 'this user'}?`}
+        message="This permanently removes their account, profile, matches and all messages. This cannot be undone."
+        confirmLabel="Delete Account"
+        variant="danger"
+        loading={!!actionId}
+        onConfirm={deleteUser}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   )
 }

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check, UserCircle } from 'lucide-react';
 import { clsx } from 'clsx';
 import { createClient } from '@/lib/supabase/client';
 
@@ -43,7 +43,7 @@ export default function SignupPage() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -58,7 +58,25 @@ export default function SignupPage() {
       return;
     }
 
-    router.push(`/verify?email=${encodeURIComponent(email)}`);
+    // If 'Confirm email' is disabled in Supabase Auth settings, a session is returned immediately.
+    if (data?.session) {
+      router.push('/onboarding');
+    } else {
+      router.push(`/verify?email=${encodeURIComponent(email)}`);
+    }
+  };
+
+  const handleGuestSignup = async () => {
+    setError('');
+    setLoading(true);
+    const supabase = createClient();
+    const { error: authError } = await supabase.auth.signInAnonymously();
+    if (authError) {
+      setError(authError.message);
+      setLoading(false);
+      return;
+    }
+    router.push('/onboarding');
   };
 
   return (
@@ -71,7 +89,11 @@ export default function SignupPage() {
       <div className="w-full max-w-md animate-fade-up">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl shadow-gold mb-4" style={{ background: '#C9A84C' }}>
-            <span className="text-black font-black text-xl">C</span>
+            <svg width="30" height="27" viewBox="0 0 20 18" fill="none" aria-hidden="true">
+              <path d="M1.5 2C4 12 9 16 9 16C9 16 14 12 18.5 2" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="1.5" cy="2" r="1.5" fill="black"/>
+              <circle cx="18.5" cy="2" r="1.5" fill="black"/>
+            </svg>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">
             {step === 1 ? 'Create account' : 'Who are you here for?'}
@@ -87,7 +109,7 @@ export default function SignupPage() {
           ))}
         </div>
 
-        <div className="glass rounded-3xl p-8">
+        <div className="glass rounded-3xl p-5 sm:p-8">
           {error && (
             <div className="p-3 rounded-xl mb-4 text-sm text-red-400" style={{ background: 'rgba(231,76,60,0.12)', border: '1px solid rgba(231,76,60,0.25)' }}>
               {error}
@@ -166,6 +188,17 @@ export default function SignupPage() {
               </>
             )}
           </form>
+
+          <div className="flex items-center gap-3 my-6">
+            <div className="flex-1 h-px bg-white/[0.08]" />
+            <span className="text-xs text-white/30">or</span>
+            <div className="flex-1 h-px bg-white/[0.08]" />
+          </div>
+
+          <button type="button" onClick={handleGuestSignup} disabled={loading}
+            className="w-full h-11 glass rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 transition-colors text-sm font-medium text-white/70">
+            <UserCircle size={18} /> Continue as Guest
+          </button>
         </div>
 
         <p className="text-center text-sm text-white/40 mt-6">

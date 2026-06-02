@@ -1,4 +1,4 @@
-import { getStripe, getWebhookSecret, tierFromPlanId, type PlanId } from '@/lib/stripe'
+import { getStripe, getWebhookSecret, tierFromPlanId, isProfessionalPlan, type PlanId } from '@/lib/stripe'
 import { adminSupabase } from '@/lib/supabase/admin'
 import { createClient } from '@supabase/supabase-js'
 import type Stripe from 'stripe'
@@ -40,18 +40,27 @@ export async function POST(request: Request) {
     const planId  = session.metadata?.plan_id as PlanId | undefined
     if (!userId || !planId) return Response.json({ error: 'Missing metadata' }, { status: 400 })
 
-    const tier = tierFromPlanId(planId)
-    await db.from('profiles').update({ is_premium: true, premium_tier: tier }).eq('id', userId)
+    if (isProfessionalPlan(planId)) {
+      await db.from('profiles').update({ is_professional: true }).eq('id', userId)
+    } else {
+      const tier = tierFromPlanId(planId)
+      await db.from('profiles').update({ is_premium: true, premium_tier: tier }).eq('id', userId)
+    }
     await db.from('notifications').insert({
-      user_id: userId, type: 'premium', data: { plan_id: planId, tier },
+      user_id: userId, type: 'premium', data: { plan_id: planId },
     })
   }
 
   if (event.type === 'customer.subscription.deleted') {
     const sub    = event.data.object as Stripe.Subscription
     const userId = sub.metadata?.user_id
+    const planId = sub.metadata?.plan_id as PlanId | undefined
     if (userId) {
-      await db.from('profiles').update({ is_premium: false, premium_tier: null }).eq('id', userId)
+      if (planId && isProfessionalPlan(planId)) {
+        await db.from('profiles').update({ is_professional: false }).eq('id', userId)
+      } else {
+        await db.from('profiles').update({ is_premium: false, premium_tier: null }).eq('id', userId)
+      }
     }
   }
 

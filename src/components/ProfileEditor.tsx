@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, Plus, Check, Briefcase, MapPin, User, Globe, Link2, CheckCircle } from 'lucide-react'
+import { X, Plus, Check, Briefcase, MapPin, User, Globe, Link2, CheckCircle, Camera, Loader2, Images } from 'lucide-react'
 
 interface ProfileData {
   full_name: string
@@ -18,6 +18,7 @@ interface ProfileData {
   website: string
   is_open_to_work: boolean
   avatar_url: string
+  photos: string[]
   userId: string
 }
 
@@ -44,7 +45,8 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
   const [error, setError] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState(initialData.avatar_url)
-  const fileRef = useRef<HTMLInputElement>(null)
+  const [photos, setPhotos] = useState<string[]>(initialData.photos ?? [])
+  const [photoUploading, setPhotoUploading] = useState(false)
 
   const set = (key: keyof ProfileData, val: unknown) =>
     setData((d) => ({ ...d, [key]: val }))
@@ -64,6 +66,33 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
     if (!file) return
     setAvatarFile(file)
     setPreviewUrl(URL.createObjectURL(file))
+  }
+
+  const handleAddPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (e.target) e.target.value = ''
+    setPhotoUploading(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/profile/photos', { method: 'POST', body: fd })
+    if (res.ok) {
+      const { photos: updated } = await res.json()
+      setPhotos(updated)
+    }
+    setPhotoUploading(false)
+  }
+
+  const handleRemovePhoto = async (url: string) => {
+    const res = await fetch('/api/profile/photos', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    })
+    if (res.ok) {
+      const { photos: updated } = await res.json()
+      setPhotos(updated)
+    }
   }
 
   const handleSave = async () => {
@@ -149,13 +178,81 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
                 }
               </div>
               <div>
-                <button onClick={() => fileRef.current?.click()}
-                  className="btn-gold px-4 py-2 rounded-xl text-sm font-semibold text-black block mb-1">
+                <label htmlFor="avatar-upload"
+                  className="btn-gold px-4 py-2 rounded-xl text-sm font-semibold text-black block mb-1 cursor-pointer text-center">
                   Change Photo
-                </button>
+                </label>
                 <p className="text-xs text-white/30">JPG, PNG, WebP — max 5 MB</p>
               </div>
-              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleAvatarChange} />
+              <input id="avatar-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={handleAvatarChange} />
+            </div>
+
+            {/* Discover photos */}
+            <div className="glass rounded-2xl p-4" style={{ border: '1px solid rgba(201,168,76,0.12)' }}>
+              {/* Header */}
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-semibold text-white flex items-center gap-1.5">
+                  <Images size={14} style={{ color: '#C9A84C' }} /> Discover Photos
+                </span>
+                <span className="text-xs font-bold"
+                  style={{ color: photos.length >= 5 ? '#C9A84C' : 'rgba(255,255,255,0.35)' }}>
+                  {photos.length} / 5
+                </span>
+              </div>
+              <p className="text-[11px] text-white/35 mb-3">
+                Shown as a photo carousel on your swipe card · more photos = more interest
+              </p>
+
+              {/* Slot progress bar */}
+              <div className="flex gap-1 mb-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex-1 h-1 rounded-full transition-all duration-300"
+                    style={{ background: i < photos.length ? '#C9A84C' : 'rgba(255,255,255,0.1)' }} />
+                ))}
+              </div>
+
+              {/* Photo grid */}
+              <div className="grid grid-cols-3 gap-2">
+                {photos.map((url, idx) => (
+                  <div key={url} className="relative aspect-square rounded-xl overflow-hidden group">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    {idx === 0 && (
+                      <div className="absolute bottom-1 left-1 text-[9px] font-bold bg-black/60 text-white/70 px-1.5 py-0.5 rounded-full">
+                        1st shown
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePhoto(url)}
+                      className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      <X size={18} className="text-white" />
+                    </button>
+                  </div>
+                ))}
+                {photos.length < 5 && (
+                  <label
+                    htmlFor={photoUploading ? undefined : 'profile-photo-upload'}
+                    className="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer"
+                    style={photoUploading
+                      ? { borderColor: 'rgba(255,255,255,0.1)', opacity: 0.4, pointerEvents: 'none' }
+                      : { borderColor: 'rgba(201,168,76,0.25)', color: 'rgba(201,168,76,0.6)' }}>
+                    {photoUploading
+                      ? <Loader2 size={18} className="animate-spin text-white/30" />
+                      : <>
+                          <Camera size={18} />
+                          <span className="text-[10px] font-medium">Add photo</span>
+                        </>}
+                  </label>
+                )}
+              </div>
+              <input id="profile-photo-upload" type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={handleAddPhoto} />
+
+              {photos.length >= 5 && (
+                <p className="text-[11px] text-center mt-3 font-semibold" style={{ color: '#C9A84C' }}>
+                  ✓ All 5 slots filled — you'll stand out in Discover!
+                </p>
+              )}
             </div>
 
             {/* Name */}

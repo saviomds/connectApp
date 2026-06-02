@@ -1,9 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { BadgeCheck, MapPin, Settings, Crown, Plus, Briefcase } from 'lucide-react';
+import { BadgeCheck, MapPin, Settings, Crown, Plus, Briefcase, ShieldCheck, Clock, ShieldX } from 'lucide-react';
 import { getCachedUser, createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import ProfilePageClient from '@/components/ProfilePageClient';
+import VerificationGate from '@/components/VerificationGate';
 import type { DbProfile } from '@/types/database';
 
 export default async function ProfilePage() {
@@ -86,6 +87,7 @@ export default async function ProfilePage() {
               website: p.website ?? '',
               is_open_to_work: p.is_open_to_work,
               avatar_url: p.avatar_url ?? '',
+              photos: p.photos ?? [],
             }} />
           </div>
         </div>
@@ -103,6 +105,13 @@ export default async function ProfilePage() {
             {completion < 100 ? 'Complete your profile to get more matches' : '✨ Profile complete!'}
           </p>
         </div>
+
+        {/* Verification status */}
+        <VerificationGate
+          status={p.verification_status ?? 'none'}
+          category={p.category ?? null}
+          isProfessional={p.is_professional ?? false}
+        />
 
         {p.bio && (
           <div className="glass rounded-2xl p-5 mb-4">

@@ -1,15 +1,24 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   MessageCircle, Heart, MapPin, BadgeCheck, MoreHorizontal,
-  UserMinus, ShieldBan, Flag, Loader2,
+  UserMinus, ShieldBan, Flag, Loader2, Star, X, Sparkles, ChevronRight,
 } from 'lucide-react'
+import ConfirmModal from '@/components/ConfirmModal'
 
-// ─── Report modal (same as Discover) ─────────────────────────
+// ─── Shared profile shape ─────────────────────────────────────
+interface ProfileMeta {
+  id: string; full_name: string; avatar_url: string | null
+  profession: string | null; company: string | null
+  city: string | null; country: string | null
+  is_verified: boolean; is_online: boolean
+}
+
+// ─── Report modal ─────────────────────────────────────────────
 const REPORT_REASONS = [
   { id: 'spam',          label: 'Spam or scam',         emoji: '🚫' },
   { id: 'inappropriate', label: 'Inappropriate content', emoji: '⚠️' },
@@ -17,14 +26,13 @@ const REPORT_REASONS = [
   { id: 'fake_profile',  label: 'Fake profile',          emoji: '🎭' },
   { id: 'other',         label: 'Other',                 emoji: '📝' },
 ] as const
-
 type ReportReason = typeof REPORT_REASONS[number]['id']
 
 function ReportModal({ targetId, targetName, onClose }: { targetId: string; targetName: string; onClose: () => void }) {
-  const [reason, setReason]     = useState<ReportReason | ''>('')
-  const [details, setDetails]   = useState('')
+  const [reason, setReason]       = useState<ReportReason | ''>('')
+  const [details, setDetails]     = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [done, setDone]         = useState(false)
+  const [done, setDone]           = useState(false)
 
   async function submit() {
     if (!reason) return
@@ -92,192 +100,583 @@ function ReportModal({ targetId, targetName, onClose }: { targetId: string; targ
   )
 }
 
-// ─── Match card ───────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────
 interface MatchItem {
   id: string
   conversationId: string | null
-  profile: {
-    id: string; full_name: string; avatar_url: string | null
-    profession: string | null; company: string | null
-    city: string | null; country: string | null
-    is_verified: boolean; is_online: boolean
-  }
+  created_at: string
+  profile: ProfileMeta
 }
 
-function MatchCard({ match, onRemove }: { match: MatchItem; onRemove: (id: string) => void }) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [loading, setLoading]   = useState(false)
-  const [reportOpen, setReportOpen] = useState(false)
+interface LikedYouItem {
+  swipeId: string
+  direction: 'like' | 'super_like'
+  likedAt: string
+  profile: ProfileMeta
+  is_matched: boolean
+  matchId: string | null
+  conversationId: string | null
+}
 
-  async function unmatch() {
-    if (!confirm(`Unmatch with ${match.profile.full_name}? This cannot be undone.`)) return
-    setMenuOpen(false)
-    setLoading(true)
-    if (match.conversationId) {
-      await fetch(`/api/conversations/${match.conversationId}`, { method: 'DELETE' })
-    }
-    setLoading(false)
-    onRemove(match.id)
-  }
-
-  async function block() {
-    if (!confirm(`Block ${match.profile.full_name}? This will also remove the match.`)) return
-    setMenuOpen(false)
-    setLoading(true)
-    await fetch(`/api/users/${match.profile.id}/block`, { method: 'POST' })
-    setLoading(false)
-    onRemove(match.id)
-  }
-
-  const p = match.profile
+// ─── Story circle (liked-you) ─────────────────────────────────
+function StoryCircle({ item, onClick }: { item: LikedYouItem; onClick: () => void }) {
+  const firstName = item.profile.full_name.split(' ')[0].slice(0, 9)
+  const isSuperLike = item.direction === 'super_like'
 
   return (
-    <>
-      <div className="glass rounded-3xl overflow-hidden border border-white/10 group hover:border-gold/30 transition-all relative">
-        {/* Avatar */}
-        <div className="aspect-[4/5] relative">
-          {p.avatar_url ? (
-            <Image src={p.avatar_url} alt={p.full_name} fill className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
+    <motion.button
+      onClick={onClick}
+      whileTap={{ scale: 0.93 }}
+      className="flex flex-col items-center gap-2 flex-shrink-0 group outline-none"
+    >
+      {/* gradient ring */}
+      <div className="relative p-[2.5px] rounded-full transition-transform group-hover:scale-105"
+        style={{
+          background: isSuperLike
+            ? 'linear-gradient(135deg,#3B82F6,#8B5CF6,#EC4899)'
+            : 'linear-gradient(135deg,#F43F5E,#EC4899,#F97316)',
+        }}>
+        <div className="w-[68px] h-[68px] rounded-full border-[3px] border-black overflow-hidden relative bg-white/10">
+          {item.profile.avatar_url ? (
+            <Image src={item.profile.avatar_url} alt={item.profile.full_name} fill
+              className="object-cover" sizes="68px" />
           ) : (
-            <div className="absolute inset-0 bg-white/5 flex items-center justify-center text-4xl font-bold text-white/10 uppercase">
-              {p.full_name[0]}
+            <div className="absolute inset-0 flex items-center justify-center text-xl font-bold text-white/40">
+              {item.profile.full_name[0].toUpperCase()}
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
+        </div>
 
-          {/* Online indicator */}
-          {p.is_online && (
-            <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-full px-2 py-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-              <span className="text-[10px] text-white/80 font-medium">Online</span>
+        {/* online dot */}
+        {item.profile.is_online && (
+          <span className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-green-400 rounded-full border-2 border-black block" />
+        )}
+
+        {/* super-like star */}
+        {isSuperLike && (
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center border-2 border-black">
+            <Star size={9} className="fill-white text-white" />
+          </span>
+        )}
+
+        {/* matched heart */}
+        {item.is_matched && (
+          <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-black"
+            style={{ background: '#C9A84C' }}>
+            <Heart size={8} className="fill-white text-white" />
+          </span>
+        )}
+      </div>
+
+      <span className="text-[11px] text-white/60 font-medium group-hover:text-white/90 transition-colors text-center leading-tight max-w-[72px] truncate">
+        {firstName}
+      </span>
+    </motion.button>
+  )
+}
+
+// ─── Story preview modal ──────────────────────────────────────
+function StoryPreviewModal({
+  item, onClose, onLikedBack,
+}: {
+  item: LikedYouItem
+  onClose: () => void
+  onLikedBack: (profileId: string) => void
+}) {
+  const [liking, setLiking]       = useState(false)
+  const [justMatched, setJustMatched] = useState(false)
+  const [newConvId, setNewConvId] = useState<string | null>(null)
+  const p = item.profile
+  const isSuperLike = item.direction === 'super_like'
+
+  async function likeBack() {
+    setLiking(true)
+    const res = await fetch('/api/swipes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_id: p.id, direction: 'like' }),
+    })
+    setLiking(false)
+    if (!res.ok) return
+    setJustMatched(true)
+    onLikedBack(p.id)
+    setTimeout(() => {
+      fetch('/api/matches')
+        .then(r => r.json())
+        .then((ms: MatchItem[]) => {
+          const m = ms.find(m => m.profile.id === p.id)
+          if (m?.conversationId) setNewConvId(m.conversationId)
+        })
+    }, 600)
+  }
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-black/85 backdrop-blur-lg" />
+
+      <motion.div
+        className="relative w-full sm:max-w-[360px] mx-0 sm:mx-4 overflow-hidden rounded-t-[2rem] sm:rounded-[2rem] border border-white/10"
+        style={{ background: 'rgba(15,15,20,0.97)' }}
+        initial={{ y: 100, opacity: 0, scale: 0.97 }}
+        animate={{ y: 0, opacity: 1, scale: 1 }}
+        exit={{ y: 80, opacity: 0 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Photo */}
+        <div className="relative h-[52vh] sm:h-72 w-full overflow-hidden">
+          {p.avatar_url ? (
+            <Image src={p.avatar_url} alt={p.full_name} fill
+              className="object-cover object-top" sizes="(max-width:640px) 100vw, 360px" />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-7xl font-bold text-white/10"
+              style={{ background: 'rgba(255,255,255,0.03)' }}>
+              {p.full_name[0].toUpperCase()}
             </div>
           )}
+          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(15,15,20,0.98)] via-[rgba(15,15,20,0.15)] to-transparent" />
 
-          {/* ⋮ menu */}
-          <div className="absolute top-3 right-3">
-            <button
-              onClick={() => setMenuOpen(v => !v)}
-              className="w-8 h-8 rounded-xl bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white hover:bg-black/60 transition-colors">
-              {loading ? <Loader2 size={14} className="animate-spin" /> : <MoreHorizontal size={14} />}
-            </button>
+          {/* Close */}
+          <button onClick={onClose}
+            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white border border-white/10 transition-all">
+            <X size={16} />
+          </button>
 
-            <AnimatePresence>
-              {menuOpen && (
-                <>
-                  <motion.div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-                  <motion.div
-                    className="absolute right-0 top-10 w-44 glass rounded-2xl overflow-hidden z-40 shadow-xl border border-white/10"
-                    initial={{ opacity: 0, scale: 0.9, y: -8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: -8 }}>
-                    <button onClick={unmatch}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/[0.06] transition-colors">
-                      <UserMinus size={13} style={{ color: '#F39C12' }} />
-                      <span className="text-white/70">Unmatch</span>
-                    </button>
-                    <button onClick={block}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/[0.06] transition-colors">
-                      <ShieldBan size={13} style={{ color: '#F39C12' }} />
-                      <span className="text-white/70">Block</span>
-                    </button>
-                    <button onClick={() => { setMenuOpen(false); setReportOpen(true) }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-red-500/10 transition-colors">
-                      <Flag size={13} style={{ color: '#E74C3C' }} />
-                      <span className="text-red-400">Report</span>
-                    </button>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
+          {/* Like type pill */}
+          <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-md font-bold text-xs"
+            style={{
+              background: isSuperLike ? 'rgba(59,130,246,0.45)' : 'rgba(244,63,94,0.45)',
+              border: `1px solid ${isSuperLike ? 'rgba(59,130,246,0.7)' : 'rgba(244,63,94,0.7)'}`,
+              color: isSuperLike ? '#93c5fd' : '#fda4af',
+            }}>
+            {isSuperLike
+              ? <Star size={11} className="fill-blue-300 text-blue-300" />
+              : <Heart size={11} className="fill-rose-300 text-rose-300" />}
+            {isSuperLike ? 'Super Liked you!' : 'Liked you!'}
           </div>
 
           {/* Name overlay */}
-          <div className="absolute bottom-4 left-4 right-4 text-white">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <h3 className="text-lg font-bold truncate">{p.full_name}</h3>
-              {p.is_verified && <BadgeCheck size={16} className="fill-blue-400 text-white shrink-0" />}
+          <div className="absolute bottom-5 left-5 right-5">
+            {justMatched ? (
+              <motion.div className="text-center" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+                <div className="text-5xl mb-2">🎉</div>
+                <div className="text-2xl font-bold text-white">It&apos;s a Match!</div>
+                <div className="text-white/50 text-sm mt-1">
+                  You and {p.full_name.split(' ')[0]} liked each other
+                </div>
+              </motion.div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-2xl font-bold text-white">{p.full_name}</h2>
+                  {p.is_verified && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-blue-300"
+                      style={{ background: 'rgba(74,144,226,0.2)', border: '1px solid rgba(74,144,226,0.4)' }}>
+                      <BadgeCheck size={10} className="fill-blue-400" /> Verified
+                    </span>
+                  )}
+                  {item.is_matched && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-gold"
+                      style={{ background: 'rgba(201,168,76,0.2)', border: '1px solid rgba(201,168,76,0.4)' }}>
+                      <Heart size={9} className="fill-gold" /> Matched
+                    </span>
+                  )}
+                </div>
+                {p.profession && (
+                  <p className="text-white/55 text-sm mt-1">{p.profession}{p.company ? ` · ${p.company}` : ''}</p>
+                )}
+                {p.city && (
+                  <p className="flex items-center gap-1 text-white/35 text-xs mt-1.5">
+                    <MapPin size={11} /> {[p.city, p.country].filter(Boolean).join(', ')}
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="p-5 flex gap-3">
+          {justMatched ? (
+            <>
+              <button onClick={onClose}
+                className="flex-1 h-12 rounded-2xl text-sm font-semibold text-white/50 hover:text-white transition-colors"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                Keep browsing
+              </button>
+              <Link
+                href={item.conversationId || newConvId ? `/messages/${item.conversationId || newConvId}` : '/messages'}
+                className="flex-1 h-12 btn-gold rounded-2xl font-bold text-black text-sm flex items-center justify-center gap-2">
+                <MessageCircle size={16} /> Say Hi!
+              </Link>
+            </>
+          ) : item.is_matched ? (
+            <>
+              <button onClick={onClose}
+                className="w-12 h-12 rounded-2xl flex items-center justify-center text-white/40 hover:text-white transition-colors shrink-0"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <X size={18} />
+              </button>
+              <Link
+                href={item.conversationId ? `/messages/${item.conversationId}` : '/messages'}
+                className="flex-1 h-12 btn-gold rounded-2xl font-bold text-black text-sm flex items-center justify-center gap-2">
+                <MessageCircle size={16} /> Chat Now
+              </Link>
+            </>
+          ) : (
+            <>
+              <button onClick={onClose}
+                className="w-12 h-12 rounded-2xl flex items-center justify-center text-white/40 hover:text-white transition-colors shrink-0"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <X size={18} />
+              </button>
+              <button onClick={likeBack} disabled={liking}
+                className="flex-1 h-12 rounded-2xl font-bold text-white text-sm flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg,#F43F5E,#EC4899)' }}>
+                {liking
+                  ? <Loader2 size={16} className="animate-spin" />
+                  : <><Heart size={16} className="fill-white" /> Like Back</>}
+              </button>
+            </>
+          )}
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+// ─── Match card ───────────────────────────────────────────────
+function MatchCard({ match, onRemove }: { match: MatchItem; onRemove: (id: string) => void }) {
+  const [menuOpen, setMenuOpen]     = useState(false)
+  const [loading, setLoading]       = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
+  const [confirm, setConfirm]       = useState<'unmatch' | 'block' | null>(null)
+  const p = match.profile
+  const isNew = !match.conversationId
+
+  async function unmatch() {
+    setLoading(true)
+    const res = await fetch(`/api/matches/${match.id}`, { method: 'DELETE' })
+    setLoading(false); setConfirm(null)
+    if (res.ok) onRemove(match.id)
+  }
+
+  async function block() {
+    setLoading(true)
+    const res = await fetch(`/api/users/${match.profile.id}/block`, { method: 'POST' })
+    setLoading(false); setConfirm(null)
+    if (res.ok) onRemove(match.id)
+  }
+
+  return (
+    <>
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="glass rounded-3xl overflow-hidden border border-white/10 group hover:border-white/20 transition-all relative"
+      >
+        <div className="aspect-[3/4] relative">
+          {p.avatar_url ? (
+            <Image src={p.avatar_url} alt={p.full_name} fill className="object-cover"
+              sizes="(max-width:768px) 100vw, (max-width:1200px) 50vw, 33vw" />
+          ) : (
+            <div className="absolute inset-0 bg-white/5 flex items-center justify-center text-5xl font-bold text-white/10 uppercase">
+              {p.full_name[0]}
             </div>
-            <p className="text-white/60 text-xs truncate mb-1.5">{p.profession}{p.company ? ` · ${p.company}` : ''}</p>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" style={{ '--tw-gradient-from-position': '0%', '--tw-gradient-via-position': '55%' } as React.CSSProperties} />
+
+          {/* Top row */}
+          <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              {p.is_online && (
+                <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold text-green-300 bg-black/50 backdrop-blur-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" /> Online
+                </span>
+              )}
+              {isNew && (
+                <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold backdrop-blur-sm"
+                  style={{ background: 'rgba(201,168,76,0.35)', color: '#fde68a', border: '1px solid rgba(201,168,76,0.5)' }}>
+                  <Sparkles size={9} /> New
+                </span>
+              )}
+            </div>
+
+            {/* ⋮ menu */}
+            <div className="relative">
+              <button onClick={() => setMenuOpen(v => !v)}
+                className="w-8 h-8 rounded-xl bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white transition-colors border border-white/10">
+                {loading ? <Loader2 size={13} className="animate-spin" /> : <MoreHorizontal size={14} />}
+              </button>
+              <AnimatePresence>
+                {menuOpen && (
+                  <>
+                    <motion.div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
+                    <motion.div
+                      className="absolute right-0 top-10 w-44 glass rounded-2xl overflow-hidden z-40 shadow-xl border border-white/10"
+                      initial={{ opacity: 0, scale: 0.9, y: -8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9, y: -8 }}>
+                      <button onClick={() => { setMenuOpen(false); setConfirm('unmatch') }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/[0.06] transition-colors">
+                        <UserMinus size={13} style={{ color: '#F39C12' }} />
+                        <span className="text-white/70">Unmatch</span>
+                      </button>
+                      <button onClick={() => { setMenuOpen(false); setConfirm('block') }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/[0.06] transition-colors">
+                        <ShieldBan size={13} style={{ color: '#F39C12' }} />
+                        <span className="text-white/70">Block</span>
+                      </button>
+                      <button onClick={() => { setMenuOpen(false); setReportOpen(true) }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-red-500/10 transition-colors">
+                        <Flag size={13} style={{ color: '#E74C3C' }} />
+                        <span className="text-red-400">Report</span>
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Name */}
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+              <h3 className="text-base font-bold text-white truncate">{p.full_name}</h3>
+              {p.is_verified && (
+                <BadgeCheck size={14} className="fill-blue-400 text-blue-300 shrink-0" />
+              )}
+            </div>
+            <p className="text-white/50 text-xs truncate">{p.profession}{p.company ? ` · ${p.company}` : ''}</p>
             {p.city && (
-              <div className="flex items-center gap-1 text-[10px] text-white/40 uppercase tracking-tighter">
-                <MapPin size={10} /> {[p.city, p.country].filter(Boolean).join(', ')}
-              </div>
+              <p className="flex items-center gap-1 text-[10px] text-white/30 mt-1">
+                <MapPin size={9} /> {[p.city, p.country].filter(Boolean).join(', ')}
+              </p>
             )}
           </div>
         </div>
 
         {/* Chat button */}
-        <div className="p-4 bg-white/[0.02]">
-          <Link href={match.conversationId ? `/messages/${match.conversationId}` : `/messages`}
-            className="w-full h-11 btn-gold rounded-2xl font-bold text-black text-sm flex items-center justify-center gap-2">
-            <MessageCircle size={16} /> Chat Now
+        <div className="p-3">
+          <Link href={match.conversationId ? `/messages/${match.conversationId}` : '/messages'}
+            className="w-full h-10 btn-gold rounded-2xl font-bold text-black text-sm flex items-center justify-center gap-2">
+            <MessageCircle size={15} />
+            {isNew ? 'Start Chat' : 'Continue Chat'}
           </Link>
         </div>
-      </div>
+      </motion.div>
 
       <AnimatePresence>
         {reportOpen && (
           <ReportModal targetId={p.id} targetName={p.full_name} onClose={() => setReportOpen(false)} />
         )}
       </AnimatePresence>
+      <ConfirmModal open={confirm === 'unmatch'} title={`Unmatch with ${p.full_name}?`}
+        message="This will remove the match and all messages permanently."
+        confirmLabel="Unmatch" variant="warning" loading={loading}
+        onConfirm={unmatch} onCancel={() => setConfirm(null)} />
+      <ConfirmModal open={confirm === 'block'} title={`Block ${p.full_name}?`}
+        message="They won't be able to contact you. This also removes the match."
+        confirmLabel="Block" variant="danger" loading={loading}
+        onConfirm={block} onCancel={() => setConfirm(null)} />
     </>
   )
 }
 
 // ─── Page ─────────────────────────────────────────────────────
 export default function MatchesPage() {
-  const [matches, setMatches] = useState<MatchItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const [matches,      setMatches]      = useState<MatchItem[]>([])
+  const [likedYou,     setLikedYou]     = useState<LikedYouItem[]>([])
+  const [loading,      setLoading]      = useState(true)
+  const [loadingLikes, setLoadingLikes] = useState(true)
+  const [activeStory,  setActiveStory]  = useState<LikedYouItem | null>(null)
+  const storiesRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetch('/api/matches')
       .then(r => r.ok ? r.json() : [])
       .then(data => { setMatches(data ?? []); setLoading(false) })
       .catch(() => setLoading(false))
+
+    fetch('/api/matches/likes-you')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => { setLikedYou(data ?? []); setLoadingLikes(false) })
+      .catch(() => setLoadingLikes(false))
   }, [])
 
   function removeMatch(id: string) {
     setMatches(prev => prev.filter(m => m.id !== id))
   }
 
-  return (
-    <main className="min-h-screen pt-24 pb-12 px-6 max-w-5xl mx-auto">
-      <header className="mb-10">
-        <div className="flex items-center gap-2 mb-2">
-          <Heart size={20} className="text-gold fill-gold" />
-          <span className="text-sm font-semibold uppercase tracking-widest text-gold">Your Connections</span>
-        </div>
-        <h1 className="text-4xl font-bold text-white">Matches</h1>
-        <p className="text-white/40 mt-2">People who liked you back. Start a conversation!</p>
-      </header>
+  function handleLikedBack(profileId: string) {
+    setTimeout(() => {
+      fetch('/api/matches')
+        .then(r => r.ok ? r.json() : [])
+        .then(data => setMatches(data ?? []))
+      fetch('/api/matches/likes-you')
+        .then(r => r.ok ? r.json() : [])
+        .then(data => setLikedYou(data ?? []))
+    }, 900)
+  }
 
-      {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="glass rounded-3xl overflow-hidden animate-pulse">
-              <div className="aspect-[4/5] bg-white/[0.04]" />
-              <div className="p-4"><div className="h-11 bg-white/[0.04] rounded-2xl" /></div>
+  const unmatched = likedYou.filter(l => !l.is_matched)
+  const newMatches = matches.filter(m => !m.conversationId).length
+
+  return (
+    <main className="min-h-screen pt-20 pb-28 md:pb-12 max-w-5xl mx-auto">
+
+      {/* ── Stats bar ── */}
+      <div className="px-4 sm:px-6 mb-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-2">
+            <Heart size={18} className="text-gold fill-gold" />
+            <span className="text-sm font-bold uppercase tracking-widest text-gold">Connections</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'Liked You', value: loadingLikes ? '…' : likedYou.length, color: '#F43F5E', sub: 'total' },
+            { label: 'Matches',   value: loading ? '…' : matches.length,        color: '#C9A84C', sub: 'mutual' },
+            { label: 'New',       value: loading ? '…' : newMatches,            color: '#34D399', sub: 'unread' },
+          ].map(s => (
+            <div key={s.label} className="glass rounded-2xl p-4 text-center border border-white/[0.07]">
+              <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
+              <div className="text-white/50 text-xs mt-0.5 font-medium">{s.label}</div>
+              <div className="text-white/20 text-[10px]">{s.sub}</div>
             </div>
           ))}
         </div>
-      ) : matches.length === 0 ? (
-        <div className="glass rounded-3xl p-16 text-center border border-white/5">
-          <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Heart size={32} className="text-white/20" />
+      </div>
+
+      {/* ── Liked You stories strip ── */}
+      <section className="mb-10">
+        <div className="px-4 sm:px-6 flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Heart size={16} className="fill-rose-400 text-rose-400" />
+              Liked You
+              {!loadingLikes && likedYou.length > 0 && (
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                  style={{ background: 'rgba(244,63,94,0.18)', color: '#fda4af', border: '1px solid rgba(244,63,94,0.3)' }}>
+                  {likedYou.length}
+                </span>
+              )}
+            </h2>
+            <p className="text-white/35 text-xs mt-0.5">Tap a circle to view & respond</p>
           </div>
-          <h2 className="text-xl font-semibold text-white mb-2">No matches yet</h2>
-          <p className="text-white/40 mb-8 max-w-sm mx-auto">Keep exploring and liking profiles in the Discover tab.</p>
-          <Link href="/discover" className="btn-gold px-8 py-3 rounded-2xl font-bold text-black inline-block">
-            Go Discover
-          </Link>
+          {unmatched.length > 0 && (
+            <span className="text-xs text-white/30 flex items-center gap-1">
+              {unmatched.length} waiting <ChevronRight size={12} />
+            </span>
+          )}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {matches.map(match => (
-            <MatchCard key={match.id} match={match} onRemove={removeMatch} />
-          ))}
+
+        {loadingLikes ? (
+          <div className="flex gap-4 px-4 sm:px-6 overflow-x-auto no-scrollbar pb-1">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div key={i} className="flex flex-col items-center gap-2 flex-shrink-0 animate-pulse">
+                <div className="w-[68px] h-[68px] rounded-full bg-white/[0.07]" />
+                <div className="w-12 h-2.5 rounded-full bg-white/[0.05]" />
+              </div>
+            ))}
+          </div>
+        ) : likedYou.length === 0 ? (
+          <div className="mx-4 sm:mx-6 glass rounded-2xl px-6 py-5 flex items-center gap-4 border border-white/[0.06]">
+            <div className="w-12 h-12 rounded-full bg-white/[0.05] flex items-center justify-center shrink-0">
+              <Heart size={20} className="text-white/20" />
+            </div>
+            <div>
+              <p className="text-white/60 text-sm font-semibold">No likes yet</p>
+              <p className="text-white/30 text-xs mt-0.5">Profiles that like you will appear here as stories.</p>
+            </div>
+          </div>
+        ) : (
+          <div
+            ref={storiesRef}
+            className="flex gap-4 px-4 sm:px-6 overflow-x-auto no-scrollbar pb-2"
+            style={{ scrollbarWidth: 'none' }}
+          >
+            {likedYou.map((item, i) => (
+              <motion.div key={item.swipeId}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.04 }}>
+                <StoryCircle item={item} onClick={() => setActiveStory(item)} />
+              </motion.div>
+            ))}
+            {/* fade-out fade on right edge */}
+            <div className="sticky right-0 shrink-0 w-8 bg-transparent pointer-events-none" />
+          </div>
+        )}
+      </section>
+
+      {/* ── Matches section ── */}
+      <section className="px-4 sm:px-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <Sparkles size={16} className="text-gold" />
+              Your Matches
+              {!loading && matches.length > 0 && (
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full"
+                  style={{ background: 'rgba(201,168,76,0.15)', color: '#fde68a', border: '1px solid rgba(201,168,76,0.3)' }}>
+                  {matches.length}
+                </span>
+              )}
+            </h2>
+            <p className="text-white/35 text-xs mt-0.5">People who liked you back</p>
+          </div>
         </div>
-      )}
+
+        {loading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="glass rounded-3xl overflow-hidden animate-pulse">
+                <div className="aspect-[3/4] bg-white/[0.04]" />
+                <div className="p-3"><div className="h-9 bg-white/[0.04] rounded-2xl" /></div>
+              </div>
+            ))}
+          </div>
+        ) : matches.length === 0 ? (
+          <div className="glass rounded-3xl p-10 text-center border border-white/[0.06]">
+            <div className="w-16 h-16 bg-white/[0.05] rounded-full flex items-center justify-center mx-auto mb-5">
+              <Heart size={28} className="text-white/15" />
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">No matches yet</h3>
+            <p className="text-white/35 text-sm max-w-xs mx-auto mb-7">
+              Keep exploring and liking profiles. Your matches will show up here.
+            </p>
+            <Link href="/discover"
+              className="btn-gold px-8 py-3 rounded-2xl font-bold text-black text-sm inline-flex items-center gap-2">
+              <Sparkles size={15} /> Go Discover
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <AnimatePresence>
+              {matches.map(match => (
+                <MatchCard key={match.id} match={match} onRemove={removeMatch} />
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </section>
+
+      {/* ── Story preview modal ── */}
+      <AnimatePresence>
+        {activeStory && (
+          <StoryPreviewModal
+            item={activeStory}
+            onClose={() => setActiveStory(null)}
+            onLikedBack={handleLikedBack}
+          />
+        )}
+      </AnimatePresence>
     </main>
   )
 }

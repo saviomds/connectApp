@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -20,11 +21,24 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Cannot swipe on yourself' }, { status: 400 })
   }
 
+  // Fix Bug 1: Force an INSERT to ensure the 'create_match_on_like' trigger fires.
+  // PostgreSQL AFTER INSERT triggers do not fire on UPSERT updates.
+  // We delete any existing (orphaned) swipe first to ensure the next call is an INSERT.
+  await supabase
+    .from('swipes')
+    .delete()
+    .eq('swiper_id', user.id)
+    .eq('target_id', target_id)
+
   const { data, error } = await supabase
     .from('swipes')
-    .upsert({ swiper_id: user.id, target_id, direction }, { onConflict: 'swiper_id,target_id' })
+    .insert({ swiper_id: user.id, target_id, direction })
     .select()
     .single()
+
+  // Fix: Force Next.js to purge the cached Discover feed data.
+  // This ensures the swiped user is immediately added to the 'excludeIds' on the next fetch.
+  revalidatePath('/', 'layout')
 
   if (error) return Response.json({ error: error.message }, { status: 500 })
 

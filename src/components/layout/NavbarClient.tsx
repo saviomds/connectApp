@@ -40,9 +40,13 @@ export default function NavbarClient({ userName, avatarUrl, unreadCount }: Props
           {/* Logo */}
           <Link href={showAppNav ? '/discover' : '/'} className="flex items-center gap-2.5 group">
             <div className="w-8 h-8 rounded-xl bg-gold flex items-center justify-center shadow-gold group-hover:shadow-gold-lg transition-all">
-              <span className="text-black font-black text-sm">C</span>
+              <svg width="18" height="16" viewBox="0 0 20 18" fill="none" aria-hidden="true">
+                <path d="M1.5 2C4 12 9 16 9 16C9 16 14 12 18.5 2" stroke="black" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="1.5" cy="2" r="1.5" fill="black"/>
+                <circle cx="18.5" cy="2" r="1.5" fill="black"/>
+              </svg>
             </div>
-            <span className="font-semibold text-white tracking-tight">ConnectApp</span>
+            <span className="font-semibold text-white tracking-tight">Vibro</span>
           </Link>
 
           {/* Desktop nav */}

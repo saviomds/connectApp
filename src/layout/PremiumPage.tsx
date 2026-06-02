@@ -59,12 +59,14 @@ const FEATURES_COMPARE = [
 
 export default function PremiumPage() {
   const router = useRouter();
-  const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
-  const [selected, setSelected] = useState('gold');
+  const [billing, setBilling]       = useState<'monthly' | 'yearly'>('monthly');
+  const [selected, setSelected]     = useState('gold');
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [stripeError, setStripeError] = useState('');
 
   const handleSubscribe = async (planId: PlanId) => {
     setLoadingPlan(planId);
+    setStripeError('');
     try {
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
@@ -80,13 +82,13 @@ export default function PremiumPage() {
       const { url, error } = await res.json();
 
       if (error) {
-        alert(error);
+        setStripeError(error);
         return;
       }
 
       window.location.href = url;
     } catch {
-      alert('Something went wrong. Please try again.');
+      setStripeError('Something went wrong. Please try again.');
     } finally {
       setLoadingPlan(null);
     }
@@ -106,7 +108,7 @@ export default function PremiumPage() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full text-sm font-medium mb-5" style={{ color: '#C9A84C' }}>
             <Crown size={14} style={{ fill: '#C9A84C' }} />
-            Unlock the full ConnectApp experience
+            Unlock the full Vibro experience
           </div>
           <h1 className="text-4xl font-bold text-white mb-3">Premium Plans</h1>
           <p className="text-white/50 text-lg">Be seen. Get matches. Make real connections.</p>
@@ -122,6 +124,14 @@ export default function PremiumPage() {
             ))}
           </div>
         </div>
+
+        {stripeError && (
+          <div className="flex items-center gap-3 glass rounded-2xl px-4 py-3 mb-6 max-w-lg mx-auto"
+            style={{ border: '1px solid rgba(231,76,60,0.3)' }}>
+            <span className="text-red-400 text-sm flex-1">{stripeError}</span>
+            <button onClick={() => setStripeError('')} className="text-white/30 hover:text-white text-xs shrink-0">✕</button>
+          </div>
+        )}
 
         <div className="grid md:grid-cols-3 gap-5 mb-12">
           {PLANS.map((plan) => {
@@ -199,20 +209,20 @@ export default function PremiumPage() {
 
         {/* Feature comparison */}
         <div className="glass rounded-3xl overflow-hidden mb-8">
-          <div className="grid grid-cols-4 px-6 py-4 border-b border-white/[0.06]">
-            <div className="text-sm font-semibold text-white/40">Feature</div>
+          <div className="grid grid-cols-4 px-3 sm:px-6 py-4 border-b border-white/[0.06]">
+            <div className="text-xs sm:text-sm font-semibold text-white/40">Feature</div>
             {['Free', 'Gold', 'Platinum'].map((p) => (
-              <div key={p} className="text-sm font-semibold text-center" style={{ color: p === 'Gold' ? '#C9A84C' : p === 'Platinum' ? '#E8E8E8' : '#fff' }}>{p}</div>
+              <div key={p} className="text-xs sm:text-sm font-semibold text-center" style={{ color: p === 'Gold' ? '#C9A84C' : p === 'Platinum' ? '#E8E8E8' : '#fff' }}>{p}</div>
             ))}
           </div>
           {FEATURES_COMPARE.map(({ label, icon: Icon, free, gold, platinum }) => (
-            <div key={label} className="grid grid-cols-4 px-6 py-3.5 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
-              <div className="flex items-center gap-2 text-sm text-white/60">
-                <Icon size={13} className="text-white/30" />
-                {label}
+            <div key={label} className="grid grid-cols-4 px-3 sm:px-6 py-3 sm:py-3.5 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors">
+              <div className="flex items-center gap-1.5 text-xs sm:text-sm text-white/60">
+                <Icon size={12} className="text-white/30 shrink-0" />
+                <span className="truncate">{label}</span>
               </div>
               {[free, gold, platinum].map((val, i) => (
-                <div key={i} className="text-sm text-center font-medium"
+                <div key={i} className="text-xs sm:text-sm text-center font-medium"
                   style={{ color: val === '–' ? 'rgba(255,255,255,0.2)' : val === '✓' ? '#2ECC71' : i === 1 ? '#C9A84C' : i === 2 ? '#E8E8E8' : '#fff' }}>
                   {val}
                 </div>
@@ -222,7 +232,7 @@ export default function PremiumPage() {
         </div>
 
         {/* Boost add-on */}
-        <div className="glass rounded-3xl p-6 flex items-center gap-4" style={{ border: '1px solid rgba(201,168,76,0.2)' }}>
+        <div className="glass rounded-3xl p-4 sm:p-6 flex items-center gap-3 sm:gap-4" style={{ border: '1px solid rgba(201,168,76,0.2)' }}>
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)' }}>
             <Zap size={22} style={{ color: '#C9A84C', fill: '#C9A84C' }} />
           </div>

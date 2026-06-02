@@ -23,7 +23,7 @@ const CATEGORIES = [
 const TESTIMONIALS = [
   {
     name: 'Sarah K.', role: 'Product Designer',
-    text: 'Found my co-founder AND my partner on ConnectApp. The professional + personal blend is genius.',
+    text: 'Found my co-founder AND my partner on Vibro. The professional + personal blend is genius.',
     photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80',
   },
   {
@@ -91,11 +91,11 @@ export default function LandingPage() {
       </section>
 
       {/* ── Categories ───────────────────────────────────────── */}
-      <section className="py-24 px-6">
+      <section className="py-12 sm:py-24 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#C9A84C' }}>For Everyone</p>
-            <h2 className="text-4xl font-bold text-white">Who is ConnectApp for?</h2>
+            <h2 className="text-4xl font-bold text-white">Who is Vibro for?</h2>
             <p className="text-white/50 mt-3 text-lg">Six communities under one roof.</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -110,10 +110,10 @@ export default function LandingPage() {
       </section>
 
       {/* ── Features ─────────────────────────────────────────── */}
-      <section className="py-24 px-6" style={{ background: 'rgba(17,17,20,0.4)' }}>
+      <section className="py-12 sm:py-24 px-4 sm:px-6" style={{ background: 'rgba(17,17,20,0.4)' }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#C9A84C' }}>Why ConnectApp</p>
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#C9A84C' }}>Why Vibro</p>
             <h2 className="text-4xl font-bold text-white">Built differently, on purpose</h2>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -131,7 +131,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Testimonials ─────────────────────────────────────── */}
-      <section className="py-24 px-6">
+      <section className="py-12 sm:py-24 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#C9A84C' }}>Stories</p>
@@ -158,9 +158,9 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA ──────────────────────────────────────────────── */}
-      <section className="py-24 px-6">
+      <section className="py-12 sm:py-24 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="glass rounded-3xl p-12 relative overflow-hidden" style={{ border: '1px solid rgba(201,168,76,0.15)' }}>
+          <div className="glass rounded-3xl p-6 sm:p-12 relative overflow-hidden" style={{ border: '1px solid rgba(201,168,76,0.15)' }}>
             <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(135deg, rgba(201,168,76,0.05), transparent)' }} />
             <div className="relative z-10">
               <h2 className="text-4xl font-bold text-white mb-4">Ready to connect?</h2>
@@ -187,13 +187,17 @@ export default function LandingPage() {
       </section>
 
       {/* ── Footer ───────────────────────────────────────────── */}
-      <footer className="border-t border-white/[0.06] py-10 px-6">
+      <footer className="border-t border-white/[0.06] py-10 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: '#C9A84C' }}>
-              <span className="text-black font-black text-xs">C</span>
+              <svg width="13" height="12" viewBox="0 0 20 18" fill="none" aria-hidden="true">
+                <path d="M1.5 2C4 12 9 16 9 16C9 16 14 12 18.5 2" stroke="black" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="1.5" cy="2" r="1.8" fill="black"/>
+                <circle cx="18.5" cy="2" r="1.8" fill="black"/>
+              </svg>
             </div>
-            <span className="text-white/50 text-sm">© 2025 ConnectApp. All rights reserved.</span>
+            <span className="text-white/50 text-sm">© 2025 Vibro. All rights reserved.</span>
           </div>
           <div className="flex items-center gap-6 text-sm text-white/40">
             {['Privacy', 'Terms', 'Safety', 'Help'].map((l) => (

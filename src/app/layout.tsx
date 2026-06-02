@@ -9,8 +9,9 @@ import PresenceTracker from '@/components/PresenceTracker'
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
 
 export const metadata: Metadata = {
-  title: 'ConnectApp — Discover. Match. Grow.',
+  title: 'Vibro — Discover. Match. Grow.',
   description: 'Premium social discovery and professional networking platform.',
+  icons: { icon: '/icon.svg', shortcut: '/icon.svg' },
 }
 
 // Thin static skeleton shown while Navbar resolves — prevents layout shift

@@ -2,7 +2,10 @@ import 'server-only'
 import Stripe from 'stripe'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
-export type PlanId = 'gold_monthly' | 'gold_yearly' | 'platinum_monthly' | 'platinum_yearly'
+export type PlanId =
+  | 'gold_monthly' | 'gold_yearly'
+  | 'platinum_monthly' | 'platinum_yearly'
+  | 'professional_monthly'
 
 // Anonymous Supabase client — used ONLY to call the get_setting() SECURITY DEFINER
 // function, which bypasses RLS and returns app_settings values without the
@@ -38,16 +41,22 @@ export async function getWebhookSecret(): Promise<string> {
 
 export async function getPriceId(planId: PlanId): Promise<string> {
   const envMap: Record<PlanId, string | undefined> = {
-    gold_monthly:      process.env.STRIPE_GOLD_MONTHLY_PRICE_ID,
-    gold_yearly:       process.env.STRIPE_GOLD_YEARLY_PRICE_ID,
-    platinum_monthly:  process.env.STRIPE_PLATINUM_MONTHLY_PRICE_ID,
-    platinum_yearly:   process.env.STRIPE_PLATINUM_YEARLY_PRICE_ID,
+    gold_monthly:          process.env.STRIPE_GOLD_MONTHLY_PRICE_ID,
+    gold_yearly:           process.env.STRIPE_GOLD_YEARLY_PRICE_ID,
+    platinum_monthly:      process.env.STRIPE_PLATINUM_MONTHLY_PRICE_ID,
+    platinum_yearly:       process.env.STRIPE_PLATINUM_YEARLY_PRICE_ID,
+    professional_monthly:  process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID,
   }
   const id = await getSetting(`stripe_${planId}_price_id`, envMap[planId])
   if (!id) throw new Error(`Price ID for "${planId}" not set. Go to Admin → Settings → Stripe.`)
   return id
 }
 
-export function tierFromPlanId(planId: PlanId): 'gold' | 'platinum' {
+export function tierFromPlanId(planId: PlanId): 'gold' | 'platinum' | 'professional' {
+  if (planId === 'professional_monthly') return 'professional'
   return planId.startsWith('gold') ? 'gold' : 'platinum'
+}
+
+export function isProfessionalPlan(planId: PlanId): boolean {
+  return planId === 'professional_monthly'
 }

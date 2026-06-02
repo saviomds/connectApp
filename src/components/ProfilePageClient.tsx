@@ -19,6 +19,7 @@ interface DisplayUser {
   website: string
   is_open_to_work: boolean
   avatar_url: string
+  photos: string[]
 }
 
 export default function ProfilePageClient({ displayUser }: { displayUser: DisplayUser }) {
@@ -49,6 +50,7 @@ export default function ProfilePageClient({ displayUser }: { displayUser: Displa
             website: displayUser.website,
             is_open_to_work: displayUser.is_open_to_work,
             avatar_url: displayUser.avatar_url,
+            photos: displayUser.photos,
             userId: displayUser.id,
           }}
           onClose={() => setEditing(false)}

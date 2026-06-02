@@ -166,6 +166,46 @@ CREATE TRIGGER on_like_create_match
   AFTER INSERT ON swipes FOR EACH ROW EXECUTE FUNCTION create_match_on_like();
 
 -- ============================================================
+-- BLOCKS (Fix Bug 5: Restoring discoverability)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS blocks (
+  id         UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
+  blocker_id UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  blocked_id UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT blocks_unique  UNIQUE (blocker_id, blocked_id),
+  CONSTRAINT no_self_block  CHECK  (blocker_id <> blocked_id)
+);
+CREATE INDEX IF NOT EXISTS blocks_blocker_idx ON blocks(blocker_id);
+CREATE INDEX IF NOT EXISTS blocks_blocked_idx ON blocks(blocked_id);
+
+-- Trigger to clean up swipes/matches on block (Fix Bug 5 logic)
+CREATE OR REPLACE FUNCTION clean_up_on_block()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  -- Delete swipes in both directions so discovery is restored if unblocked
+  DELETE FROM swipes 
+  WHERE (swiper_id = NEW.blocker_id AND target_id = NEW.blocked_id)
+     OR (swiper_id = NEW.blocked_id AND target_id = NEW.blocker_id);
+  
+  -- Delete existing matches
+  DELETE FROM matches
+  WHERE (user1_id = LEAST(NEW.blocker_id, NEW.blocked_id) 
+    AND user2_id = GREATEST(NEW.blocker_id, NEW.blocked_id));
+    
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS on_block_cleanup ON blocks;
+CREATE TRIGGER on_block_cleanup
+  AFTER INSERT ON blocks
+  FOR EACH ROW EXECUTE FUNCTION clean_up_on_block();
+
+ALTER TABLE blocks ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, DELETE ON blocks TO authenticated;
+
+-- ============================================================
 -- CONVERSATIONS
 -- ============================================================
 CREATE TABLE IF NOT EXISTS conversations (
@@ -255,10 +295,18 @@ $$;
 DROP POLICY IF EXISTS "profiles: public read"  ON profiles;
 DROP POLICY IF EXISTS "profiles: own insert"   ON profiles;
 DROP POLICY IF EXISTS "profiles: own update"   ON profiles;
+DROP POLICY IF EXISTS "profiles: own delete"   ON profiles;
 DROP POLICY IF EXISTS "profiles: admin update" ON profiles;
 
 CREATE POLICY "profiles: public read" ON profiles
   FOR SELECT USING (true);
+
+-- Fix: Remove 'OR is_admin()' from standard delete policies.
+-- Admins should only be able to delete THEIR OWN profile here.
+-- Deleting other users should be done via the Service Role in an Admin API, 
+-- which bypasses RLS anyway, or a separate admin-only policy.
+CREATE POLICY "profiles: own delete" ON profiles
+  FOR DELETE USING (id = auth.uid());
 
 CREATE POLICY "profiles: own insert" ON profiles
   FOR INSERT WITH CHECK (id = auth.uid());
@@ -271,12 +319,19 @@ CREATE POLICY "profiles: own update" ON profiles
 DROP POLICY IF EXISTS "swipes: own read"   ON swipes;
 DROP POLICY IF EXISTS "swipes: own insert" ON swipes;
 DROP POLICY IF EXISTS "swipes: admin read" ON swipes;
+DROP POLICY IF EXISTS "swipes: own delete" ON swipes;
 
 CREATE POLICY "swipes: own read"   ON swipes FOR SELECT USING (swiper_id = auth.uid() OR is_admin());
 CREATE POLICY "swipes: own insert" ON swipes FOR INSERT WITH CHECK (swiper_id = auth.uid());
+-- Fix: Standard users/admins only delete their own swipes.
+CREATE POLICY "swipes: own delete" ON swipes FOR DELETE USING (swiper_id = auth.uid());
 
 -- ── matches policies ─────────────────────────────────────────
 DROP POLICY IF EXISTS "matches: participant read" ON matches;
+DROP POLICY IF EXISTS "matches: participant delete" ON matches;
+
+CREATE POLICY "matches: participant delete" ON matches
+  FOR DELETE USING (user1_id = auth.uid() OR user2_id = auth.uid());
 
 CREATE POLICY "matches: participant read" ON matches
   FOR SELECT USING (user1_id = auth.uid() OR user2_id = auth.uid() OR is_admin());
@@ -284,11 +339,20 @@ CREATE POLICY "matches: participant read" ON matches
 -- ── conversations policies ───────────────────────────────────
 DROP POLICY IF EXISTS "conversations: participant read" ON conversations;
 
+DROP POLICY IF EXISTS "conversations: participant delete" ON conversations;
+
 CREATE POLICY "conversations: participant read" ON conversations
   FOR SELECT USING (
     is_admin() OR EXISTS (
       SELECT 1 FROM matches m WHERE m.id = conversations.match_id
         AND (m.user1_id = auth.uid() OR m.user2_id = auth.uid())
+    )
+  );
+
+CREATE POLICY "conversations: participant delete" ON conversations
+  FOR DELETE USING (
+    is_admin() OR EXISTS (
+      SELECT 1 FROM matches m WHERE m.id = conversations.match_id AND (m.user1_id = auth.uid() OR m.user2_id = auth.uid())
     )
   );
 
@@ -328,6 +392,19 @@ CREATE POLICY "messages: own update (mark seen)" ON messages
 -- ── notifications policies ───────────────────────────────────
 DROP POLICY IF EXISTS "notifications: own read"   ON notifications;
 DROP POLICY IF EXISTS "notifications: own update" ON notifications;
+
+-- ── blocks policies ──────────────────────────────────────────
+DROP POLICY IF EXISTS "blocks: own read"   ON blocks;
+DROP POLICY IF EXISTS "blocks: own insert" ON blocks;
+DROP POLICY IF EXISTS "blocks: own delete" ON blocks;
+
+-- Fix: Users must be able to see blocks where they are the target 
+-- so that their Discover feed can filter out the person who blocked them.
+CREATE POLICY "blocks: own read"   ON blocks 
+  FOR SELECT USING (blocker_id = auth.uid() OR blocked_id = auth.uid() OR is_admin());
+
+CREATE POLICY "blocks: own insert" ON blocks FOR INSERT WITH CHECK (blocker_id = auth.uid());
+CREATE POLICY "blocks: own delete" ON blocks FOR DELETE USING (blocker_id = auth.uid());
 
 CREATE POLICY "notifications: own read"   ON notifications FOR SELECT USING (user_id = auth.uid() OR is_admin());
 CREATE POLICY "notifications: own update" ON notifications FOR UPDATE USING (user_id = auth.uid());

@@ -138,9 +138,25 @@ function SwipeCard({ profile, isTop, stackOffset, onSwipe }: {
   const likeOpacity = useTransform(x, [10, SWIPE_THRESHOLD],  [0, 1]);
   const passOpacity = useTransform(x, [-SWIPE_THRESHOLD, -10], [1, 0]);
 
+  // Photo carousel
+  const allPhotos = [profile.avatar_url, ...(profile.photos ?? [])].filter(Boolean) as string[];
+  const [photoIdx, setPhotoIdx] = useState(0);
+  const draggedRef = useRef(false);
+
   function handleDragEnd(_: unknown, info: PanInfo) {
+    draggedRef.current = Math.abs(info.offset.x) > 5 || Math.abs(info.offset.y) > 5;
     if (info.offset.x >  SWIPE_THRESHOLD) { onSwipe?.('like');  return; }
     if (info.offset.x < -SWIPE_THRESHOLD) { onSwipe?.('pass');  return; }
+  }
+
+  function handlePhotoTap(e: React.MouseEvent<HTMLDivElement>) {
+    if (!isTop || draggedRef.current) { draggedRef.current = false; return; }
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (e.clientX - rect.left < rect.width / 2) {
+      setPhotoIdx(i => Math.max(0, i - 1));
+    } else {
+      setPhotoIdx(i => Math.min(allPhotos.length - 1, i + 1));
+    }
   }
 
   return (
@@ -157,9 +173,28 @@ function SwipeCard({ profile, isTop, stackOffset, onSwipe }: {
       dragElastic={0.9}
       onDragEnd={isTop ? handleDragEnd : undefined}
     >
-      <CardPhoto photo={profile.avatar_url} name={profile.full_name} priority={stackOffset === 0} />
+      {/* Photo tap zones */}
+      <div className="absolute inset-0 z-10" onClick={handlePhotoTap} />
+      <CardPhoto photo={allPhotos[photoIdx] ?? null} name={profile.full_name} priority={stackOffset === 0} />
+
+      {/* Photo progress bars — Stories style, top of card */}
+      {allPhotos.length > 1 && (
+        <div className="absolute top-0 left-0 right-0 z-20 px-3 pt-2.5 flex gap-1 pointer-events-none">
+          {allPhotos.map((_, i) => (
+            <div key={i} className="flex-1 h-[3px] rounded-full transition-all duration-300"
+              style={{
+                background: i < photoIdx
+                  ? 'rgba(255,255,255,0.6)'
+                  : i === photoIdx
+                  ? 'rgba(255,255,255,0.95)'
+                  : 'rgba(255,255,255,0.2)',
+              }} />
+          ))}
+        </div>
+      )}
+
       <div className="absolute inset-0 pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, rgba(10,10,11,0.1) 0%, transparent 35%, rgba(10,10,11,0.97) 100%)' }} />
+        style={{ background: 'linear-gradient(to bottom, rgba(10,10,11,0.25) 0%, transparent 30%, rgba(10,10,11,0.97) 100%)' }} />
 
       {isTop && (
         <motion.div className="absolute top-10 left-6 border-4 rounded-xl px-4 py-2 rotate-[-20deg] pointer-events-none"
@@ -175,17 +210,33 @@ function SwipeCard({ profile, isTop, stackOffset, onSwipe }: {
       )}
 
       <div className="absolute bottom-0 left-0 right-0 p-5 pointer-events-none">
-        {profile.is_online && (
-          <span className="flex items-center gap-1.5 text-xs font-medium text-white/80 mb-3">
-            <span className="w-2 h-2 rounded-full pulse-dot" style={{ background: '#2ECC71', display: 'inline-block' }} />
-            Online
-          </span>
-        )}
-        <div className="flex items-center gap-2 mb-1">
+        {/* Status row: online + photo count */}
+        <div className="flex items-center justify-between mb-2">
+          {profile.is_online ? (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-white/80">
+              <span className="w-2 h-2 rounded-full pulse-dot" style={{ background: '#2ECC71', display: 'inline-block' }} />
+              Online
+            </span>
+          ) : <span />}
+          {allPhotos.length > 1 && (
+            <span className="text-[10px] font-semibold text-white/60 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full">
+              {photoIdx + 1} / {allPhotos.length} photos
+            </span>
+          )}
+        </div>
+
+        {/* Name + verified badge */}
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
           <h2 className="text-2xl font-bold text-white">
             {profile.full_name}{profile.age ? `, ${profile.age}` : ''}
           </h2>
-          {profile.is_verified && <BadgeCheck size={20} className="fill-blue-400 text-white shrink-0" />}
+          {profile.is_verified && (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full shrink-0"
+              style={{ background: 'rgba(74,144,226,0.25)', border: '1px solid rgba(74,144,226,0.5)' }}>
+              <BadgeCheck size={12} className="fill-blue-400 text-blue-300 shrink-0" />
+              <span className="text-[10px] font-bold text-blue-300">Verified</span>
+            </div>
+          )}
         </div>
         <p className="text-white/70 text-sm mb-1.5">
           {profile.profession}{profile.company ? ` · ${profile.company}` : ''}
@@ -417,7 +468,7 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
   }
 
   return (
-    <div className="h-screen flex flex-col pt-16 overflow-hidden">
+    <div className="h-screen flex flex-col pt-16 pb-16 md:pb-0 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 shrink-0">
         <div>

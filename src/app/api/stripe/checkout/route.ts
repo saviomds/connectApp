@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getStripe, getPriceId, type PlanId } from '@/lib/stripe'
+import { getStripe, getPriceId, isProfessionalPlan, type PlanId } from '@/lib/stripe'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -9,7 +9,8 @@ export async function POST(request: Request) {
 
   const { plan_id } = await request.json() as { plan_id: PlanId }
 
-  if (!['gold_monthly', 'gold_yearly', 'platinum_monthly', 'platinum_yearly'].includes(plan_id)) {
+  const VALID_PLANS = ['gold_monthly','gold_yearly','platinum_monthly','platinum_yearly','professional_monthly']
+  if (!VALID_PLANS.includes(plan_id)) {
     return Response.json({ error: 'Invalid plan' }, { status: 400 })
   }
 
@@ -23,8 +24,10 @@ export async function POST(request: Request) {
       payment_method_types: ['card'],
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${origin}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/premium`,
+      success_url: isProfessionalPlan(plan_id)
+        ? `${origin}/profile?professional_activated=1`
+        : `${origin}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: isProfessionalPlan(plan_id) ? `${origin}/profile` : `${origin}/premium`,
       metadata: { user_id: user.id, plan_id },
       subscription_data: { metadata: { user_id: user.id, plan_id } },
       customer_email: user.email,

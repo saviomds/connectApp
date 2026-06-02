@@ -2,14 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, Users, ShieldAlert, Settings, Home } from 'lucide-react'
+import { BarChart3, Users, ShieldAlert, Settings, Home, ShieldCheck } from 'lucide-react'
 import { clsx } from 'clsx'
 
 const NAV = [
-  { href: '/admin',          label: 'Overview', icon: BarChart3,   exact: true },
-  { href: '/admin/users',    label: 'Users',    icon: Users,       exact: false },
-  { href: '/admin/reports',  label: 'Reports',  icon: ShieldAlert, exact: false },
-  { href: '/admin/settings', label: 'Settings', icon: Settings,    exact: false },
+  { href: '/admin',               label: 'Overview',      icon: BarChart3,   exact: true },
+  { href: '/admin/users',         label: 'Users',         icon: Users,       exact: false },
+  { href: '/admin/verifications', label: 'Verify',        icon: ShieldCheck, exact: false },
+  { href: '/admin/reports',       label: 'Reports',       icon: ShieldAlert, exact: false },
+  { href: '/admin/settings',      label: 'Settings',      icon: Settings,    exact: false },
 ]
 
 export default function AdminNav({ email }: { email: string }) {

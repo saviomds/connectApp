@@ -3,15 +3,17 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ArrowLeft, MapPin, Briefcase, User, Check } from 'lucide-react';
+import { ArrowRight, ArrowLeft, MapPin, Briefcase, User, Check, Lock, ShieldCheck, Crown, Loader2 } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
+import VerificationRequestModal from '@/components/VerificationRequestModal';
 
 const CATEGORIES = [
-  { id: 'professional', label: 'Professional', emoji: '💼', desc: 'Career networking & growth' },
-  { id: 'entrepreneur', label: 'Entrepreneur', emoji: '🚀', desc: 'Founders & investors' },
-  { id: 'creator',      label: 'Creator',      emoji: '🎨', desc: 'Artists, influencers, makers' },
-  { id: 'young_youth',  label: 'Young Youth',  emoji: '⚡', desc: 'Students & young adults' },
-  { id: 'divorced',     label: 'New Chapter',  emoji: '🌿', desc: 'Starting fresh' },
-  { id: 'company',      label: 'Company',      emoji: '🏢', desc: 'Businesses & teams' },
+  { id: 'professional', label: 'Professional', emoji: '💼', desc: 'Career networking & growth', gated: true },
+  { id: 'entrepreneur', label: 'Entrepreneur', emoji: '🚀', desc: 'Founders & investors',       gated: false },
+  { id: 'creator',      label: 'Creator',      emoji: '🎨', desc: 'Artists, influencers, makers', gated: false },
+  { id: 'young_youth',  label: 'Young Youth',  emoji: '⚡', desc: 'Students & young adults',    gated: false },
+  { id: 'divorced',     label: 'New Chapter',  emoji: '🌿', desc: 'Starting fresh',             gated: true },
+  { id: 'company',      label: 'Company',      emoji: '🏢', desc: 'Businesses & teams',         gated: false },
 ];
 
 export default function OnboardingPage() {
@@ -25,8 +27,25 @@ export default function OnboardingPage() {
   const [age, setAge] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [gatedCategory, setGatedCategory] = useState<{ id: string; label: string } | null>(null);
+  const [showVerif, setShowVerif] = useState(false);
+  const [professionalLoading, setProfessionalLoading] = useState(false);
 
   const TOTAL_STEPS = 4;
+
+  async function handleProfessionalPayment(catId: string) {
+    setProfessionalLoading(true);
+    const res = await fetch('/api/stripe/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan_id: 'professional_monthly' }),
+    });
+    setProfessionalLoading(false);
+    if (res.status === 401) { router.push('/login?next=/onboarding'); return; }
+    const { url, error: err } = await res.json();
+    if (err) { setError(err); return; }
+    window.location.href = url;
+  }
 
   const handleSubmit = async () => {
     setError('');
@@ -65,7 +84,7 @@ export default function OnboardingPage() {
           ))}
         </div>
 
-        <div className="glass rounded-3xl p-8">
+        <div className="glass rounded-3xl p-5 sm:p-8">
           {error && (
             <div className="p-3 rounded-xl mb-4 text-sm text-red-400" style={{ background: 'rgba(231,76,60,0.12)', border: '1px solid rgba(231,76,60,0.25)' }}>
               {error}
@@ -77,18 +96,35 @@ export default function OnboardingPage() {
               <h1 className="text-2xl font-bold text-white mb-1">Who are you here for?</h1>
               <p className="text-white/50 text-sm mb-6">We&apos;ll personalise your experience</p>
               <div className="grid grid-cols-2 gap-3 mb-6">
-                {CATEGORIES.map(({ id, label, emoji, desc }) => (
-                  <button key={id} onClick={() => setCategory(id)}
+                {CATEGORIES.map(({ id, label, emoji, desc, gated }) => (
+                  <button key={id}
+                    onClick={() => {
+                      if (gated) { setGatedCategory({ id, label }); return; }
+                      setCategory(id);
+                    }}
                     className="relative p-4 rounded-2xl border text-left transition-all"
-                    style={{ background: category === id ? 'rgba(201,168,76,0.12)' : 'rgba(255,255,255,0.04)', borderColor: category === id ? '#C9A84C' : 'rgba(255,255,255,0.08)' }}>
+                    style={{
+                      background: category === id ? 'rgba(201,168,76,0.12)' : 'rgba(255,255,255,0.04)',
+                      borderColor: category === id ? '#C9A84C' : 'rgba(255,255,255,0.08)',
+                    }}>
                     {category === id && (
                       <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white flex items-center justify-center">
                         <Check size={11} className="text-black" />
                       </div>
                     )}
+                    {gated && category !== id && (
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ background: 'rgba(201,168,76,0.15)' }}>
+                        <Lock size={9} style={{ color: '#C9A84C' }} />
+                      </div>
+                    )}
                     <div className="text-2xl mb-1">{emoji}</div>
                     <div className="text-sm font-semibold text-white">{label}</div>
                     <div className="text-xs text-white/40 mt-0.5">{desc}</div>
+                    {gated && (
+                      <div className="mt-1.5 text-[10px] font-semibold uppercase tracking-wide"
+                        style={{ color: '#C9A84C' }}>Verified only</div>
+                    )}
                   </button>
                 ))}
               </div>
@@ -96,6 +132,64 @@ export default function OnboardingPage() {
                 className="btn-gold w-full h-12 rounded-xl font-semibold text-black flex items-center justify-center gap-2 disabled:opacity-40">
                 Continue <ArrowRight size={16} />
               </button>
+
+              {/* Gated category gate modal */}
+              {gatedCategory && (
+                <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center px-0 sm:px-4">
+                  <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setGatedCategory(null)} />
+                  <div className="relative w-full sm:max-w-sm glass rounded-t-3xl sm:rounded-3xl p-6">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                      style={{ background: 'rgba(201,168,76,0.12)', border: '1px solid rgba(201,168,76,0.25)' }}>
+                      <Crown size={26} style={{ color: '#C9A84C' }} />
+                    </div>
+                    <h2 className="text-xl font-bold text-white text-center mb-2">
+                      {gatedCategory.label} requires access
+                    </h2>
+                    <p className="text-sm text-white/55 text-center mb-5 leading-relaxed">
+                      This category requires a <strong className="text-white">Professional Plan</strong> ($19.99/mo)
+                      and identity verification. You'll get a verified badge and full professional networking access.
+                    </p>
+                    <div className="flex flex-col gap-3">
+                      <button
+                        onClick={() => { setGatedCategory(null); handleProfessionalPayment(gatedCategory.id); }}
+                        disabled={professionalLoading}
+                        className="w-full h-12 rounded-xl font-bold text-black flex items-center justify-center gap-2 disabled:opacity-60"
+                        style={{ background: '#C9A84C' }}>
+                        {professionalLoading
+                          ? <Loader2 size={16} className="animate-spin" />
+                          : <><Crown size={15} /> Get Professional Plan — $19.99/mo</>}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCategory(gatedCategory.id);
+                          setGatedCategory(null);
+                          setShowVerif(true);
+                        }}
+                        className="w-full h-11 glass rounded-xl text-white/60 hover:text-white text-sm font-medium flex items-center justify-center gap-2 transition-colors">
+                        <ShieldCheck size={14} /> Submit verification only (free)
+                      </button>
+                      <button onClick={() => setGatedCategory(null)}
+                        className="text-sm text-white/30 hover:text-white/60 text-center transition-colors">
+                        Choose a different category
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <AnimatePresence>
+                {showVerif && gatedCategory && (
+                  <VerificationRequestModal
+                    category={gatedCategory.id}
+                    categoryLabel={gatedCategory.label}
+                    onClose={() => setShowVerif(false)}
+                    onSubmitted={() => {
+                      setShowVerif(false);
+                      setStep(2);
+                    }}
+                  />
+                )}
+              </AnimatePresence>
             </>
           )}
 

@@ -2,6 +2,10 @@ export type UserCategory = 'professional' | 'entrepreneur' | 'creator' | 'young_
 export type PremiumTier = 'gold' | 'platinum'
 export type SwipeDirection = 'like' | 'pass' | 'super_like'
 export type NotificationType = 'match' | 'message' | 'super_like' | 'profile_boost' | 'premium'
+export type VerificationStatus = 'none' | 'pending' | 'approved' | 'rejected'
+
+/** Categories that require professional access + ID verification */
+export const GATED_CATEGORIES: UserCategory[] = ['professional', 'divorced']
 
 export interface DbProfile {
   id: string
@@ -22,12 +26,27 @@ export interface DbProfile {
   is_verified: boolean
   is_premium: boolean
   premium_tier: PremiumTier | null
+  is_professional: boolean
+  verification_status: VerificationStatus
   is_online: boolean
   last_seen_at: string
   onboarding_completed: boolean
   profile_completion: number
   created_at: string
   updated_at: string
+}
+
+export interface DbVerificationRequest {
+  id: string
+  user_id: string
+  category: string
+  photo_selfie_url: string
+  photo_id_url: string
+  photo_portrait_url: string
+  status: 'pending' | 'approved' | 'rejected'
+  admin_note: string | null
+  created_at: string
+  reviewed_at: string | null
 }
 
 export interface DbSwipe {

@@ -578,7 +578,8 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
   // ── Unmatch ───────────────────────────────────────────────────
   async function unmatch() {
     setActionLoading(true)
-    const res = await fetch(`/api/conversations/${convId}`, { method: 'DELETE' })
+    // Use match ID directly — cascades to conversation + messages via FK
+    const res = await fetch(`/api/matches/${matchId}`, { method: 'DELETE' })
     setActionLoading(false)
     setConfirmDialog(null)
     if (res.ok) router.push('/matches')
@@ -623,7 +624,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
   }
 
   return (
-    <div className="flex flex-col h-screen pt-16" onClick={() => setHeaderMenuOpen(false)}>
+    <div className="flex flex-col h-screen pt-16 pb-16 md:pb-0" onClick={() => setHeaderMenuOpen(false)}>
 
       {/* ── Header ── */}
       <div className="glass border-b border-white/[0.06] px-4 py-3 flex items-center gap-3 shrink-0 z-10">

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, ArrowRight, UserCircle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Suspense } from 'react';
 
@@ -38,6 +38,19 @@ function LoginForm() {
     router.refresh();
   };
 
+  const handleGuestLogin = async () => {
+    setError('');
+    setLoading(true);
+    const supabase = createClient();
+    const { error: authError } = await supabase.auth.signInAnonymously();
+    if (authError) {
+      setError(authError.message);
+      setLoading(false);
+      return;
+    }
+    router.push(next);
+  };
+
   const handleOAuth = async (provider: 'google') => {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
@@ -50,13 +63,17 @@ function LoginForm() {
     <div className="w-full max-w-md animate-fade-up">
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl shadow-gold mb-4" style={{ background: '#C9A84C' }}>
-          <span className="text-black font-black text-xl">C</span>
+          <svg width="30" height="27" viewBox="0 0 20 18" fill="none" aria-hidden="true">
+            <path d="M1.5 2C4 12 9 16 9 16C9 16 14 12 18.5 2" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="1.5" cy="2" r="1.5" fill="black"/>
+            <circle cx="18.5" cy="2" r="1.5" fill="black"/>
+          </svg>
         </div>
         <h1 className="text-3xl font-bold text-white mb-2">Welcome back</h1>
         <p className="text-white/50">Sign in to continue your journey</p>
       </div>
 
-      <div className="glass rounded-3xl p-8">
+      <div className="glass rounded-3xl p-5 sm:p-8">
         {error && (
           <div className="p-3 rounded-xl mb-4 text-sm text-red-400" style={{ background: 'rgba(231,76,60,0.12)', border: '1px solid rgba(231,76,60,0.25)' }}>
             {error}
@@ -109,6 +126,10 @@ function LoginForm() {
           <button onClick={() => handleOAuth('google')}
             className="h-11 glass rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 transition-colors text-sm font-medium text-white/70">
             <span className="font-bold text-sm" style={{ color: '#EA4335' }}>G</span> Continue with Google
+          </button>
+          <button onClick={handleGuestLogin}
+            className="h-11 glass rounded-xl flex items-center justify-center gap-2 hover:bg-white/10 transition-colors text-sm font-medium text-white/70">
+            <UserCircle size={18} /> Continue as Guest
           </button>
         </div>
       </div>
