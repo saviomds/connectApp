@@ -210,7 +210,7 @@ export default function AdminUsersPage() {
                           </button>
 
                           {menuId === u.id && (
-                            <div className="absolute right-0 top-10 w-52 modal rounded-xl overflow-hidden z-50 shadow-xl">
+                            <div className="absolute right-0 top-10 w-52 modal rounded-xl overflow-hidden z-50 shadow-xl max-h-[280px] overflow-y-auto">
                               {[
                                 {
                                   icon: u.is_admin ? ShieldOff : ShieldCheck,

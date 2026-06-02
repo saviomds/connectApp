@@ -155,18 +155,37 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="min-h-screen flex items-start justify-center px-4 py-8">
-        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-        <div className="relative w-full max-w-lg glass rounded-3xl overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
-            <h2 className="text-lg font-bold text-white">Edit Profile</h2>
-            <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/[0.06] hover:bg-white/10 text-white/60 hover:text-white transition-colors">
-              <X size={16} />
+    /* Mobile: slides up from bottom full-width. Desktop: centered modal */
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:px-4 sm:py-6">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
+
+      {/* Sheet / modal card */}
+      <div
+        className="relative w-full sm:max-w-lg modal rounded-t-3xl sm:rounded-2xl overflow-hidden flex flex-col animate-fade-up"
+        style={{ maxHeight: '92dvh' }}>
+
+        {/* Gold accent line */}
+        <div className="h-[2px] shrink-0" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.5), transparent)' }} />
+
+        {/* ── Fixed header ── */}
+        <div className="modal-header flex items-center justify-between px-5 py-4 shrink-0">
+          <h2 className="text-base font-bold text-white">Edit Profile</h2>
+          <div className="flex items-center gap-2">
+            {success && (
+              <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: 'rgba(46,204,113,0.13)', color: '#2ECC71', border: '1px solid rgba(46,204,113,0.25)' }}>
+                <CheckCircle size={12} /> Saved
+              </span>
+            )}
+            <button onClick={onClose}
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-white/50 hover:text-white transition-colors"
+              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)' }}>
+              <X size={15} />
             </button>
           </div>
+        </div>
 
-          <div className="px-6 py-5 flex flex-col gap-5">
+        {/* ── Scrollable body ── */}
+        <div className="overflow-y-auto flex-1 px-5 py-5 flex flex-col gap-5">
             {/* Avatar */}
             <div className="flex items-center gap-4">
               <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 relative"
@@ -188,7 +207,7 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
             </div>
 
             {/* Discover photos */}
-            <div className="glass rounded-2xl p-4" style={{ border: '1px solid rgba(201,168,76,0.12)' }}>
+            <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(201,168,76,0.14)' }}>
               {/* Header */}
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-semibold text-white flex items-center gap-1.5">
@@ -394,27 +413,23 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
                 {error}
               </div>
             )}
-
-            {success && (
-              <div className="flex items-center gap-2 p-3 rounded-xl text-sm" style={{ background: 'rgba(46,204,113,0.12)', border: '1px solid rgba(46,204,113,0.25)', color: '#2ECC71' }}>
-                <CheckCircle size={15} /> Profile saved!
-              </div>
-            )}
           </div>
 
-          <div className="px-6 py-4 border-t border-white/[0.06] flex gap-3">
-            <button onClick={onClose} className="flex-1 h-11 glass rounded-xl text-white/60 hover:text-white text-sm font-medium transition-colors">
+          {/* ── Fixed footer ── */}
+          <div className="modal-header shrink-0 px-5 py-4 flex gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <button onClick={onClose}
+              className="flex-1 h-11 rounded-xl text-white/65 hover:text-white text-sm font-semibold transition-colors"
+              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)' }}>
               Cancel
             </button>
             <button onClick={handleSave} disabled={saving}
-              className="flex-1 h-11 btn-gold rounded-xl font-semibold text-black text-sm flex items-center justify-center gap-2 disabled:opacity-60">
+              className="flex-1 h-11 btn-gold rounded-xl font-bold text-black text-sm flex items-center justify-center gap-2 disabled:opacity-60 active:scale-[0.98] transition-all">
               {saving
-                ? <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" /></svg>
+                ? <Loader2 size={15} className="animate-spin" />
                 : <><Check size={15} /> Save Changes</>}
             </button>
           </div>
         </div>
       </div>
-    </div>
   )
 }

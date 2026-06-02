@@ -616,13 +616,13 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
                     <>
                       <motion.div className="fixed inset-0 z-30" onClick={() => setCardMenu(false)} />
                       <motion.div
-                        className="absolute right-0 top-10 w-44 glass rounded-2xl overflow-hidden z-40 shadow-xl border border-white/10"
+                        className="absolute right-0 top-10 w-44 modal rounded-xl overflow-hidden z-40"
                         initial={{ opacity: 0, scale: 0.9, y: -8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: -8 }}>
                         <button onClick={blockTopCard}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/[0.06] transition-colors">
+                          className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/[0.06] transition-colors border-b border-white/[0.06]">
                           <ShieldBan size={14} style={{ color: '#F39C12' }} />
-                          <span className="text-white/70">Block</span>
+                          <span className="text-white/75">Block</span>
                         </button>
                         <button onClick={() => { setCardMenu(false); setReportTarget(top); }}
                           className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-red-500/10 transition-colors">

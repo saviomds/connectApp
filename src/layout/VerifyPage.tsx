@@ -116,7 +116,7 @@ function VerifyForm() {
         </div>
       )}
 
-      <div className="flex items-center justify-center gap-2.5 mb-6">
+      <div className="flex items-center justify-center gap-2 sm:gap-2.5 mb-6">
         {Array(CODE_LENGTH).fill(0).map((_, i) => (
           <input
             key={i}
@@ -126,9 +126,14 @@ function VerifyForm() {
             onChange={(e) => handleChange(e.target.value, i)}
             onKeyDown={(e) => handleKeyDown(e, i)}
             onFocus={(e) => e.target.select()}
-            className="text-center font-bold text-xl text-white outline-none transition-all select-all"
+            className="text-center font-bold text-xl text-white outline-none transition-all select-all min-w-0"
             style={{
-              width: 48, height: 56, flexShrink: 0, borderRadius: 14,
+              /* Fluid: fills available space equally, capped at 56px */
+              flex: '1 1 0',
+              maxWidth: 56,
+              height: 52,
+              flexShrink: 0,
+              borderRadius: 14,
               background: code[i] ? 'rgba(201,168,76,0.12)' : 'rgba(255,255,255,0.06)',
               border: `1.5px solid ${code[i] ? '#C9A84C' : 'rgba(255,255,255,0.1)'}`,
               boxShadow: code[i] ? '0 0 0 3px rgba(201,168,76,0.12)' : 'none',

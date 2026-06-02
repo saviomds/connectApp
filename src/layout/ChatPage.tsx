@@ -701,16 +701,16 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
           </button>
 
           {headerMenuOpen && (
-            <div className="absolute right-0 top-10 w-44 glass rounded-2xl overflow-hidden z-50 shadow-xl border border-white/10">
+            <div className="absolute right-0 top-10 w-44 modal rounded-xl overflow-hidden z-50">
               <button
                 onClick={() => { setHeaderMenuOpen(false); setConfirmDialog('unmatch') }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-white/[0.05] transition-colors">
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-white/[0.05] transition-colors border-b border-white/[0.05]">
                 <UserMinus size={13} style={{ color: '#F39C12' }} />
-                <span className="text-white/70">Unmatch</span>
+                <span className="text-white/75">Unmatch</span>
               </button>
               <button
                 onClick={() => { setHeaderMenuOpen(false); setConfirmDialog('block') }}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-red-500/10 transition-colors">
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-red-500/10 transition-colors">
                 <ShieldBan size={13} style={{ color: '#E74C3C' }} />
                 <span className="text-red-400">Block</span>
               </button>

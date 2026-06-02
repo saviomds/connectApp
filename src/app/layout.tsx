@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Geist } from 'next/font/google'
 import './globals.css'
 import { Suspense } from 'react'
@@ -7,6 +7,14 @@ import { getCachedUser } from '@/lib/supabase/server'
 import PresenceTracker from '@/components/PresenceTracker'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#C9A84C',
+}
 
 export const metadata: Metadata = {
   title: 'Vibro — Discover. Match. Grow.',
@@ -47,10 +55,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" data-scroll-behavior="smooth" className={`${geist.variable} h-full`}>
-      <head>
-        <meta name="theme-color" content="#C9A84C" />
-        <meta name="color-scheme" content="dark" />
-      </head>
       <body className="min-h-full bg-bg-primary text-text-primary">
         <Suspense fallback={<NavbarShell />}>
           <Navbar />
