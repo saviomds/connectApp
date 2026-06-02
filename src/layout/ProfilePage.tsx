@@ -9,7 +9,7 @@ import { getCachedUser, createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import ProfilePageClient from '@/components/ProfilePageClient'
-import VerificationGate from '@/components/VerificationGate'
+import BadgesPanel from '@/components/BadgesPanel'
 import ShareProfileButton from '@/components/ShareProfileButton'
 import type { DbProfile } from '@/types/database'
 
@@ -348,11 +348,15 @@ export default async function ProfilePage() {
               )}
             </div>
 
-            {/* Verification */}
-            <VerificationGate
-              status={p.verification_status ?? 'none'}
+            {/* Badges & Membership */}
+            <BadgesPanel
+              isVerified={p.is_verified}
+              verificationStatus={p.verification_status ?? 'none'}
+              isPremium={p.is_premium}
+              premiumTier={p.premium_tier ?? null}
+              isOpenToWork={p.is_open_to_work}
+              boostedUntil={p.boosted_until ?? null}
               category={p.category ?? null}
-              isProfessional={p.is_professional ?? false}
             />
 
             {/* Premium CTA */}
