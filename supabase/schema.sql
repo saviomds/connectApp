@@ -321,10 +321,13 @@ DROP POLICY IF EXISTS "swipes: own insert" ON swipes;
 DROP POLICY IF EXISTS "swipes: admin read" ON swipes;
 DROP POLICY IF EXISTS "swipes: own delete" ON swipes;
 
-CREATE POLICY "swipes: own read"   ON swipes FOR SELECT USING (swiper_id = auth.uid() OR is_admin());
-CREATE POLICY "swipes: own insert" ON swipes FOR INSERT WITH CHECK (swiper_id = auth.uid());
+CREATE POLICY "swipes: own read"    ON swipes FOR SELECT USING (swiper_id = auth.uid() OR is_admin());
+-- Allow users to see swipes aimed at them (needed for "Liked You" feature)
+DROP POLICY IF EXISTS "swipes: target read" ON swipes;
+CREATE POLICY "swipes: target read" ON swipes FOR SELECT USING (target_id = auth.uid());
+CREATE POLICY "swipes: own insert"  ON swipes FOR INSERT WITH CHECK (swiper_id = auth.uid());
 -- Fix: Standard users/admins only delete their own swipes.
-CREATE POLICY "swipes: own delete" ON swipes FOR DELETE USING (swiper_id = auth.uid());
+CREATE POLICY "swipes: own delete"  ON swipes FOR DELETE USING (swiper_id = auth.uid());
 
 -- ── matches policies ─────────────────────────────────────────
 DROP POLICY IF EXISTS "matches: participant read" ON matches;

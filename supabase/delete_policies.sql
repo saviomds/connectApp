@@ -8,6 +8,12 @@ DROP POLICY IF EXISTS "swipes: own delete" ON swipes;
 CREATE POLICY "swipes: own delete" ON swipes
   FOR DELETE USING (swiper_id = auth.uid() OR is_admin());
 
+-- swipes: users can read swipes aimed at them (needed for "Liked You" feature)
+-- Without this, the API falls back to service role to read incoming likes.
+DROP POLICY IF EXISTS "swipes: target read" ON swipes;
+CREATE POLICY "swipes: target read" ON swipes
+  FOR SELECT USING (target_id = auth.uid());
+
 -- matches: participants can delete matches they are part of
 DROP POLICY IF EXISTS "matches: participant delete" ON matches;
 CREATE POLICY "matches: participant delete" ON matches

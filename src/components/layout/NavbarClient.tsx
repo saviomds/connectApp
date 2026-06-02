@@ -6,40 +6,36 @@ import { Compass, Heart, MessageCircle, User, Crown } from 'lucide-react';
 import { clsx } from 'clsx';
 import NotificationBell from './NotificationBell';
 
-const NAV_ITEMS = [
-  { href: '/discover',  label: 'Discover',  icon: Compass },
-  { href: '/matches',   label: 'Matches',   icon: Heart },
-  { href: '/messages',  label: 'Messages',  icon: MessageCircle },
-  { href: '/profile',   label: 'Profile',   icon: User },
-];
-
 const LANDING_ROUTES = ['/', '/login', '/signup', '/verify', '/forgot-password', '/reset-password', '/onboarding'];
 
 interface Props {
   userName: string | null;
   avatarUrl: string | null;
   unreadCount: number;
+  likedYouCount: number;
 }
 
-export default function NavbarClient({ userName, avatarUrl, unreadCount }: Props) {
+export default function NavbarClient({ userName, avatarUrl, unreadCount, likedYouCount }: Props) {
   const pathname = usePathname();
   const isLanding = LANDING_ROUTES.some((r) => pathname === r || pathname.startsWith('/verify') || pathname.startsWith('/onboarding'));
   const showAppNav = !isLanding && !!userName;
   const initial = userName?.charAt(0)?.toUpperCase() ?? '?';
 
-  const navItems = NAV_ITEMS.map((item) => ({
-    ...item,
-    badge: item.href === '/messages' && unreadCount > 0 ? unreadCount : undefined,
-  }));
+  const navItems = [
+    { href: '/discover', label: 'Discover', icon: Compass, badge: 0 },
+    { href: '/matches',  label: 'Matches',  icon: Heart,   badge: likedYouCount },
+    { href: '/messages', label: 'Messages', icon: MessageCircle, badge: unreadCount },
+    { href: '/profile',  label: 'Profile',  icon: User,    badge: 0 },
+  ];
 
   return (
     <>
-      {/* Top bar */}
+      {/* ── Top bar ── */}
       <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/[0.06]">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 h-16">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 h-16">
           {/* Logo */}
-          <Link href={showAppNav ? '/discover' : '/'} className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-xl bg-gold flex items-center justify-center shadow-gold group-hover:shadow-gold-lg transition-all">
+          <Link href={showAppNav ? '/discover' : '/'} className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-xl bg-gold flex items-center justify-center shadow-gold group-hover:shadow-gold-lg transition-all shrink-0">
               <svg width="18" height="16" viewBox="0 0 20 18" fill="none" aria-hidden="true">
                 <path d="M1.5 2C4 12 9 16 9 16C9 16 14 12 18.5 2" stroke="black" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>
                 <circle cx="1.5" cy="2" r="1.5" fill="black"/>
@@ -65,9 +61,10 @@ export default function NavbarClient({ userName, avatarUrl, unreadCount }: Props
                   >
                     <Icon size={16} />
                     {label}
-                    {badge && (
-                      <span className="absolute top-1 right-1 w-4 h-4 bg-rose rounded-full text-[9px] font-bold text-white flex items-center justify-center">
-                        {badge > 9 ? '9+' : badge}
+                    {badge > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[9px] font-bold text-white flex items-center justify-center animate-pop"
+                        style={{ background: href === '/matches' ? '#E8637A' : '#E8637A' }}>
+                        {badge > 99 ? '99+' : badge > 9 ? '9+' : badge}
                       </span>
                     )}
                   </Link>
@@ -80,6 +77,7 @@ export default function NavbarClient({ userName, avatarUrl, unreadCount }: Props
           <div className="flex items-center gap-2">
             {showAppNav ? (
               <>
+                {/* Avatar pill — hidden on very small screens */}
                 <Link href="/profile" className="hidden sm:flex items-center gap-2 px-3 py-1.5 glass rounded-full hover:bg-white/10 transition-colors">
                   {avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -89,9 +87,11 @@ export default function NavbarClient({ userName, avatarUrl, unreadCount }: Props
                       {initial}
                     </div>
                   )}
-                  <span className="text-xs text-white/70 max-w-[120px] truncate">{userName}</span>
+                  <span className="text-xs text-white/70 max-w-[100px] truncate">{userName}</span>
                 </Link>
+
                 <NotificationBell />
+
                 <Link
                   href="/premium"
                   className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold hover:opacity-80 transition-opacity"
@@ -115,10 +115,11 @@ export default function NavbarClient({ userName, avatarUrl, unreadCount }: Props
         </div>
       </header>
 
-      {/* Mobile bottom nav */}
+      {/* ── Mobile bottom nav ── */}
       {showAppNav && (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 glass border-t border-white/[0.06] md:hidden">
-          <div className="flex items-center px-2 py-2">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
+          style={{ background: 'rgba(10,10,11,0.92)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="flex items-center px-1 py-1 pb-[calc(0.25rem+env(safe-area-inset-bottom,0px))]">
             {navItems.map(({ href, label, icon: Icon, badge }) => {
               const active = pathname.startsWith(href);
               return (
@@ -126,20 +127,21 @@ export default function NavbarClient({ userName, avatarUrl, unreadCount }: Props
                   key={href}
                   href={href}
                   className={clsx(
-                    'flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-xl transition-colors',
-                    active ? 'text-gold' : 'text-white/40 hover:text-white/70'
+                    'flex-1 flex flex-col items-center gap-0.5 py-2 rounded-2xl transition-colors relative',
+                    active ? 'text-gold' : 'text-white/35 hover:text-white/70'
                   )}
                 >
                   <div className="relative">
-                    <Icon size={20} />
-                    {badge && (
-                      <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose rounded-full text-[8px] font-bold text-white flex items-center justify-center">
+                    <Icon size={21} strokeWidth={active ? 2.2 : 1.7} />
+                    {badge > 0 && (
+                      <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full text-[8px] font-bold text-white flex items-center justify-center animate-pop"
+                        style={{ background: '#E8637A' }}>
                         {badge > 9 ? '9+' : badge}
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] font-medium">{label}</span>
-                  {active && <div className="w-4 h-0.5 bg-gold rounded-full" />}
+                  <span className="text-[10px] font-medium leading-none">{label}</span>
+                  {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-gold rounded-full" />}
                 </Link>
               );
             })}

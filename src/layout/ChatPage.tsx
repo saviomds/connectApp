@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, BadgeCheck, MoreVertical, Send, ImagePlus,
   X, Eye, Trash2, ShieldBan, UserMinus, Loader2, CheckCheck,
-  AlertTriangle,
+  AlertTriangle, Reply, CornerUpLeft,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { RealtimeChannel } from '@supabase/supabase-js'
@@ -80,7 +80,7 @@ function MediaGrid({ urls, onOpen }: { urls: string[]; onOpen: (url: string) => 
   }
   const shown = urls.slice(0, 4)
   const extra = n - 4
-  const cols = shown.length === 2 ? 'grid-cols-2' : 'grid-cols-2'
+  const cols = shown.length <= 2 ? 'grid-cols-2' : 'grid-cols-2'
   return (
     <div className={`grid ${cols} gap-0.5 rounded-xl overflow-hidden w-[220px]`}>
       {shown.map((url, i) => (
@@ -99,7 +99,8 @@ function MediaGrid({ urls, onOpen }: { urls: string[]; onOpen: (url: string) => 
 
 // ─── Single message bubble ────────────────────────────────────
 function Bubble({
-  msg, isMe, other, currentUserId, onDelete, onViewOnce, onImageOpen, isLastInGroup, isLastSeen,
+  msg, isMe, other, currentUserId, onDelete, onViewOnce, onImageOpen,
+  onReply, replyToMsg, isLastInGroup, isLastSeen,
 }: {
   msg: Message
   isMe: boolean
@@ -108,6 +109,8 @@ function Bubble({
   onDelete: (id: string) => void
   onViewOnce: (id: string) => void
   onImageOpen: (url: string) => void
+  onReply: (msg: Message) => void
+  replyToMsg: Message | null
   isLastInGroup: boolean
   isLastSeen: boolean
 }) {
@@ -116,7 +119,6 @@ function Bubble({
   const pressRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   function startLongPress() {
-    if (!isMe) return
     pressRef.current = setTimeout(() => setMenuOpen(true), 480)
   }
   function cancelLongPress() { clearTimeout(pressRef.current) }
@@ -228,23 +230,48 @@ function Bubble({
           onMouseLeave={cancelLongPress}
           onTouchStart={startLongPress}
           onTouchEnd={cancelLongPress}
-          onContextMenu={e => { if (isMe) { e.preventDefault(); setMenuOpen(true) } }}
+          onContextMenu={e => { e.preventDefault(); setMenuOpen(true) }}
         >
+          {/* Reply-to preview inside bubble */}
+          {replyToMsg && !replyToMsg.is_deleted && (
+            <div
+              className={`mx-2 mt-2 mb-0 px-3 py-2 rounded-xl text-xs border-l-2 truncate max-w-[220px]`}
+              style={{
+                borderLeftColor: isMe ? 'rgba(0,0,0,0.3)' : 'rgba(201,168,76,0.6)',
+                background: isMe ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.06)',
+                color: isMe ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.5)',
+              }}>
+              <span className="font-semibold block truncate" style={{ color: isMe ? 'rgba(0,0,0,0.7)' : '#C9A84C' }}>
+                {replyToMsg.sender_id === currentUserId ? 'You' : (other?.full_name?.split(' ')[0] ?? 'Them')}
+              </span>
+              <span className="truncate block">
+                {replyToMsg.type !== 'text' ? '📷 Photo' : replyToMsg.content}
+              </span>
+            </div>
+          )}
+
           {/* Content */}
           <div className={isMedia ? '' : isMe ? 'px-4 py-2.5 text-black' : 'px-4 py-2.5 text-white/90'}>
             {bubbleContent()}
           </div>
 
-          {/* Long-press delete menu */}
+          {/* Long-press context menu */}
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-              <div className={`absolute z-50 top-full mt-1.5 ${isMe ? 'right-0' : 'left-0'} glass rounded-xl border border-white/10 shadow-xl overflow-hidden`}>
+              <div className={`absolute z-50 top-full mt-1.5 ${isMe ? 'right-0' : 'left-0'} glass rounded-xl border border-white/10 shadow-xl overflow-hidden min-w-[140px]`}>
                 <button
-                  onClick={() => { onDelete(msg.id); setMenuOpen(false) }}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 whitespace-nowrap w-full">
-                  <Trash2 size={13} /> Delete
+                  onClick={() => { onReply(msg); setMenuOpen(false) }}
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/70 hover:bg-white/[0.06] whitespace-nowrap w-full transition-colors">
+                  <Reply size={13} /> Reply
                 </button>
+                {isMe && (
+                  <button
+                    onClick={() => { onDelete(msg.id); setMenuOpen(false) }}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 whitespace-nowrap w-full transition-colors">
+                    <Trash2 size={13} /> Delete
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -313,6 +340,9 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
   const [pendingPreviews, setPendingPreviews] = useState<string[]>([])
   const [viewOnceMode, setViewOnceMode] = useState(false)
   const [uploading, setUploading]     = useState(false)
+
+  // Reply state
+  const [replyingTo, setReplyingTo]   = useState<Message | null>(null)
 
   // UI state
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
@@ -526,10 +556,12 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
       setViewOnceMode(false)
 
       setSending(true)
+      const replyId = replyingTo?.id ?? null
+      setReplyingTo(null)
       await fetch(`/api/conversations/${convId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, media_urls: mediaUrls, content: input.trim(), is_view_once: viewOnceMode }),
+        body: JSON.stringify({ type, media_urls: mediaUrls, content: input.trim(), is_view_once: viewOnceMode, reply_to_id: replyId }),
       })
       setSending(false)
       setInput('')
@@ -539,10 +571,12 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
     // Text message
     setSending(true)
     setInput('')
+    const replyId = replyingTo?.id ?? null
+    setReplyingTo(null)
     const res = await fetch(`/api/conversations/${convId}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: input.trim() }),
+      body: JSON.stringify({ content: input.trim(), reply_to_id: replyId }),
     })
     if (res.ok) {
       const data = await res.json()
@@ -598,6 +632,9 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
   const lastSeenIdx = messages.reduce(
     (acc, m, i) => (m.sender_id === currentUserId && m.is_seen ? i : acc), -1
   )
+
+  // ── Message lookup map (for reply previews) ────────────────
+  const msgMap = new Map(messages.map(m => [m.id, m]))
 
   // ── Group messages by sender for avatar display ───────────────
   const groups = messages.map((m, i) => ({
@@ -719,7 +756,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
             </div>
 
             <div className="flex flex-col gap-1">
-              {dayMsgs.map((m, i) => (
+              {dayMsgs.map((m) => (
                 <Bubble
                   key={m.id}
                   msg={m}
@@ -729,6 +766,8 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
                   onDelete={deleteMessage}
                   onViewOnce={markViewOnce}
                   onImageOpen={setLightboxUrl}
+                  onReply={setReplyingTo}
+                  replyToMsg={m.reply_to_id ? (msgMap.get(m.reply_to_id) ?? null) : null}
                   isLastInGroup={m.isLastInGroup}
                   isLastSeen={messages.indexOf(m) === lastSeenIdx}
                 />
@@ -741,6 +780,26 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
         <div ref={bottomRef} />
       </div>
 
+      {/* ── Reply preview strip ── */}
+      {replyingTo && (
+        <div className="px-4 py-2 border-t border-white/[0.06] flex items-center gap-3 bg-white/[0.03]">
+          <CornerUpLeft size={14} style={{ color: '#C9A84C' }} className="shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-semibold" style={{ color: '#C9A84C' }}>
+              {replyingTo.sender_id === currentUserId ? 'You' : (otherProfile?.full_name?.split(' ')[0] ?? 'Them')}
+            </p>
+            <p className="text-xs text-white/40 truncate">
+              {replyingTo.type !== 'text' ? '📷 Photo' : replyingTo.content}
+            </p>
+          </div>
+          <button
+            onClick={() => setReplyingTo(null)}
+            className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-white/40 hover:text-white shrink-0 transition-colors">
+            <X size={12} />
+          </button>
+        </div>
+      )}
+
       {/* ── Image staging strip ── */}
       {pendingPreviews.length > 0 && (
         <div className="px-4 py-2 border-t border-white/[0.06] flex items-center gap-2 overflow-x-auto bg-black/20">
@@ -749,7 +808,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
               <img src={src} alt="" className="w-full h-full object-cover" />
               <button
                 onClick={() => removePending(i)}
-                className="absolute top-0.5 right-0.5 w-4.5 h-4.5 rounded-full bg-black/70 flex items-center justify-center">
+                className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center">
                 <X size={9} className="text-white" />
               </button>
             </div>

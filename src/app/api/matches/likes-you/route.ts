@@ -1,4 +1,20 @@
-import { createClient, getCachedUser } from '@/lib/supabase/server'
+import { getCachedUser, createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
+
+// Service role bypasses the "swipes: own read" RLS policy which only
+// allows reading swipes you SENT. To read swipes aimed AT you we need
+// to bypass RLS, falling back to the regular client (returns empty) if
+// the key is not configured.
+function getDb() {
+  const url    = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const svcKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (svcKey && svcKey !== 'your_supabase_service_role_key_here') {
+    return createServiceClient(url, svcKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+  }
+  return null
+}
 
 interface SwipeRow {
   id: string
@@ -28,10 +44,18 @@ export async function GET() {
   const user = await getCachedUser()
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const supabase = await createClient()
+  // Use service role to read swipes where this user is the TARGET —
+  // the default RLS policy only exposes swipes the caller sent.
+  const db = getDb()
+  const supabase = await createClient()   // used for matches (RLS allows participant read)
 
-  // Fetch all swipes where someone liked the current user
-  const { data: swipes, error: swipesErr } = await supabase
+  if (!db) {
+    // Service role key not configured — fall back gracefully
+    return Response.json([])
+  }
+
+  // All likes/super_likes aimed at this user, with liker's public profile
+  const { data: swipes, error: swipesErr } = await db
     .from('swipes')
     .select(`
       id, direction, created_at,
@@ -46,7 +70,7 @@ export async function GET() {
 
   if (swipesErr) return Response.json({ error: swipesErr.message }, { status: 500 })
 
-  // Fetch existing matches to flag which likers are already matched
+  // Cross-reference existing matches so the UI can show "Matched" badge + Chat button
   const { data: matchRows } = await supabase
     .from('matches')
     .select('id, user1_id, user2_id, conversations(id)')
@@ -66,12 +90,12 @@ export async function GET() {
   const result = rows.map(s => {
     const matchInfo = matchedUserIds.get(s.swiper.id) ?? null
     return {
-      swipeId: s.id,
-      direction: s.direction,
-      likedAt: s.created_at,
-      profile: s.swiper,
-      is_matched: !!matchInfo,
-      matchId: matchInfo?.matchId ?? null,
+      swipeId:        s.id,
+      direction:      s.direction,
+      likedAt:        s.created_at,
+      profile:        s.swiper,
+      is_matched:     !!matchInfo,
+      matchId:        matchInfo?.matchId ?? null,
       conversationId: matchInfo?.conversationId ?? null,
     }
   })

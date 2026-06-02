@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   MessageCircle, Heart, MapPin, BadgeCheck, MoreHorizontal,
   UserMinus, ShieldBan, Flag, Loader2, Star, X, Sparkles, ChevronRight,
+  RefreshCw, Lock, Crown, ShieldCheck,
 } from 'lucide-react'
 import ConfirmModal from '@/components/ConfirmModal'
 
@@ -119,8 +120,8 @@ interface LikedYouItem {
 }
 
 // ─── Story circle (liked-you) ─────────────────────────────────
-function StoryCircle({ item, onClick }: { item: LikedYouItem; onClick: () => void }) {
-  const firstName = item.profile.full_name.split(' ')[0].slice(0, 9)
+function StoryCircle({ item, onClick, canSee }: { item: LikedYouItem; onClick: () => void; canSee: boolean }) {
+  const firstName = canSee ? item.profile.full_name.split(' ')[0].slice(0, 9) : '• • •'
   const isSuperLike = item.direction === 'super_like'
 
   return (
@@ -138,17 +139,26 @@ function StoryCircle({ item, onClick }: { item: LikedYouItem; onClick: () => voi
         }}>
         <div className="w-[68px] h-[68px] rounded-full border-[3px] border-black overflow-hidden relative bg-white/10">
           {item.profile.avatar_url ? (
-            <Image src={item.profile.avatar_url} alt={item.profile.full_name} fill
-              className="object-cover" sizes="68px" />
+            <Image src={item.profile.avatar_url} alt="" fill
+              className="object-cover transition-all duration-300"
+              style={canSee ? {} : { filter: 'blur(10px)', transform: 'scale(1.15)' }} />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-xl font-bold text-white/40">
+            <div className="absolute inset-0 flex items-center justify-center text-xl font-bold"
+              style={{ color: canSee ? 'rgba(255,255,255,0.4)' : 'transparent', filter: canSee ? 'none' : 'blur(6px)' }}>
               {item.profile.full_name[0].toUpperCase()}
+            </div>
+          )}
+
+          {/* Lock overlay when blurred */}
+          {!canSee && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+              <Lock size={18} className="text-white/80" />
             </div>
           )}
         </div>
 
-        {/* online dot */}
-        {item.profile.is_online && (
+        {/* online dot — only shown when can see */}
+        {canSee && item.profile.is_online && (
           <span className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-green-400 rounded-full border-2 border-black block" />
         )}
 
@@ -168,20 +178,97 @@ function StoryCircle({ item, onClick }: { item: LikedYouItem; onClick: () => voi
         )}
       </div>
 
-      <span className="text-[11px] text-white/60 font-medium group-hover:text-white/90 transition-colors text-center leading-tight max-w-[72px] truncate">
+      <span className="text-[11px] font-medium transition-colors text-center leading-tight max-w-[72px] truncate"
+        style={{ color: canSee ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)', letterSpacing: canSee ? 0 : '0.1em' }}>
         {firstName}
       </span>
     </motion.button>
   )
 }
 
+// ─── Upgrade gate modal ───────────────────────────────────────
+function UpgradeGateModal({ onClose }: { onClose: () => void }) {
+  return (
+    <motion.div
+      className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-black/85 backdrop-blur-xl" />
+      <motion.div
+        className="relative w-full sm:max-w-sm mx-0 sm:mx-4 overflow-hidden rounded-t-[2rem] sm:rounded-[2rem] border border-white/10 p-6"
+        style={{ background: 'rgba(15,15,20,0.98)' }}
+        initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 60, opacity: 0 }}
+        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Close */}
+        <button onClick={onClose}
+          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/[0.07] flex items-center justify-center text-white/40 hover:text-white transition-colors border border-white/10">
+          <X size={16} />
+        </button>
+
+        {/* Icon */}
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
+          style={{ background: 'linear-gradient(135deg, rgba(201,168,76,0.2), rgba(155,109,255,0.15))', border: '1px solid rgba(201,168,76,0.3)' }}>
+          <Lock size={28} style={{ color: '#C9A84C' }} />
+        </div>
+
+        {/* Copy */}
+        <h2 className="text-xl font-bold text-white text-center mb-2">Unlock Who Liked You</h2>
+        <p className="text-white/45 text-sm text-center leading-relaxed mb-6">
+          See every profile that liked you — faces, names, and more. Available to <span className="text-white/70 font-semibold">Professional</span> members who are <span className="text-white/70 font-semibold">Verified</span>.
+        </p>
+
+        {/* Requirements */}
+        <div className="flex flex-col gap-2.5 mb-6">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+            style={{ background: 'rgba(74,144,226,0.08)', border: '1px solid rgba(74,144,226,0.2)' }}>
+            <ShieldCheck size={18} className="text-blue-400 shrink-0" />
+            <div>
+              <p className="text-white text-sm font-semibold">Get Verified</p>
+              <p className="text-white/40 text-xs">Submit your ID for a blue verification badge</p>
+            </div>
+            <Link href="/verify" onClick={onClose}
+              className="ml-auto shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold text-blue-300"
+              style={{ background: 'rgba(74,144,226,0.15)', border: '1px solid rgba(74,144,226,0.3)' }}>
+              Verify
+            </Link>
+          </div>
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+            style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)' }}>
+            <Crown size={18} style={{ color: '#C9A84C' }} className="shrink-0" />
+            <div>
+              <p className="text-white text-sm font-semibold">Professional Plan</p>
+              <p className="text-white/40 text-xs">Unlock full access to premium features</p>
+            </div>
+            <Link href="/premium" onClick={onClose}
+              className="ml-auto shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold text-black"
+              style={{ background: '#C9A84C' }}>
+              Upgrade
+            </Link>
+          </div>
+        </div>
+
+        <button onClick={onClose}
+          className="w-full h-11 rounded-2xl text-sm font-medium text-white/40 hover:text-white/60 transition-colors"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          Maybe later
+        </button>
+      </motion.div>
+    </motion.div>
+  )
+}
+
 // ─── Story preview modal ──────────────────────────────────────
 function StoryPreviewModal({
-  item, onClose, onLikedBack,
+  item, onClose, onLikedBack, canSee,
 }: {
   item: LikedYouItem
   onClose: () => void
   onLikedBack: (profileId: string) => void
+  canSee: boolean
 }) {
   const [liking, setLiking]       = useState(false)
   const [justMatched, setJustMatched] = useState(false)
@@ -230,11 +317,13 @@ function StoryPreviewModal({
         {/* Photo */}
         <div className="relative h-[52vh] sm:h-72 w-full overflow-hidden">
           {p.avatar_url ? (
-            <Image src={p.avatar_url} alt={p.full_name} fill
-              className="object-cover object-top" sizes="(max-width:640px) 100vw, 360px" />
+            <Image src={p.avatar_url} alt="" fill
+              className="object-cover object-top transition-all duration-500"
+              style={canSee ? {} : { filter: 'blur(22px)', transform: 'scale(1.15)' }}
+              sizes="(max-width:640px) 100vw, 360px" />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-7xl font-bold text-white/10"
-              style={{ background: 'rgba(255,255,255,0.03)' }}>
+              style={{ background: 'rgba(255,255,255,0.03)', filter: canSee ? 'none' : 'blur(12px)' }}>
               {p.full_name[0].toUpperCase()}
             </div>
           )}
@@ -261,7 +350,19 @@ function StoryPreviewModal({
 
           {/* Name overlay */}
           <div className="absolute bottom-5 left-5 right-5">
-            {justMatched ? (
+            {!canSee ? (
+              /* ── Locked state ── */
+              <div className="text-center">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
+                  style={{ background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)' }}>
+                  <Lock size={22} style={{ color: '#C9A84C' }} />
+                </div>
+                <h2 className="text-lg font-bold text-white mb-1">Profile Hidden</h2>
+                <p className="text-white/40 text-xs leading-relaxed">
+                  Get verified as a Professional to reveal who liked you
+                </p>
+              </div>
+            ) : justMatched ? (
               <motion.div className="text-center" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
                 <div className="text-5xl mb-2">🎉</div>
                 <div className="text-2xl font-bold text-white">It&apos;s a Match!</div>
@@ -301,7 +402,20 @@ function StoryPreviewModal({
 
         {/* Actions */}
         <div className="p-5 flex gap-3">
-          {justMatched ? (
+          {!canSee ? (
+            /* ── Upgrade actions ── */
+            <>
+              <Link href="/verify" onClick={onClose}
+                className="flex-1 h-12 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                style={{ background: 'rgba(74,144,226,0.15)', border: '1px solid rgba(74,144,226,0.35)', color: '#93c5fd' }}>
+                <ShieldCheck size={16} /> Get Verified
+              </Link>
+              <Link href="/premium" onClick={onClose}
+                className="flex-1 h-12 btn-gold rounded-2xl font-bold text-black text-sm flex items-center justify-center gap-2">
+                <Crown size={16} /> Go Pro
+              </Link>
+            </>
+          ) : justMatched ? (
             <>
               <button onClick={onClose}
                 className="flex-1 h-12 rounded-2xl text-sm font-semibold text-white/50 hover:text-white transition-colors"
@@ -390,7 +504,7 @@ function MatchCard({ match, onRemove }: { match: MatchItem; onRemove: (id: strin
               {p.full_name[0]}
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent" style={{ '--tw-gradient-from-position': '0%', '--tw-gradient-via-position': '55%' } as React.CSSProperties} />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.1) 55%, transparent 100%)' }} />
 
           {/* Top row */}
           <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
@@ -489,39 +603,41 @@ function MatchCard({ match, onRemove }: { match: MatchItem; onRemove: (id: strin
 }
 
 // ─── Page ─────────────────────────────────────────────────────
-export default function MatchesPage() {
+export default function MatchesPage({ canSeeProfiles }: { canSeeProfiles: boolean }) {
   const [matches,      setMatches]      = useState<MatchItem[]>([])
   const [likedYou,     setLikedYou]     = useState<LikedYouItem[]>([])
   const [loading,      setLoading]      = useState(true)
   const [loadingLikes, setLoadingLikes] = useState(true)
+  const [refreshing,   setRefreshing]   = useState(false)
   const [activeStory,  setActiveStory]  = useState<LikedYouItem | null>(null)
+  const [showUpgrade,  setShowUpgrade]  = useState(false)
   const storiesRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    fetch('/api/matches')
-      .then(r => r.ok ? r.json() : [])
-      .then(data => { setMatches(data ?? []); setLoading(false) })
-      .catch(() => setLoading(false))
-
-    fetch('/api/matches/likes-you')
-      .then(r => r.ok ? r.json() : [])
-      .then(data => { setLikedYou(data ?? []); setLoadingLikes(false) })
-      .catch(() => setLoadingLikes(false))
+  const fetchAll = useCallback(async (silent = false) => {
+    if (!silent) { setLoading(true); setLoadingLikes(true) }
+    const [matchRes, likesRes] = await Promise.all([
+      fetch('/api/matches').then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch('/api/matches/likes-you').then(r => r.ok ? r.json() : []).catch(() => []),
+    ])
+    setMatches(matchRes ?? [])
+    setLikedYou(likesRes ?? [])
+    if (!silent) { setLoading(false); setLoadingLikes(false) }
   }, [])
+
+  useEffect(() => { fetchAll() }, [fetchAll])
+
+  async function refresh() {
+    setRefreshing(true)
+    await fetchAll(true)
+    setRefreshing(false)
+  }
 
   function removeMatch(id: string) {
     setMatches(prev => prev.filter(m => m.id !== id))
   }
 
-  function handleLikedBack(profileId: string) {
-    setTimeout(() => {
-      fetch('/api/matches')
-        .then(r => r.ok ? r.json() : [])
-        .then(data => setMatches(data ?? []))
-      fetch('/api/matches/likes-you')
-        .then(r => r.ok ? r.json() : [])
-        .then(data => setLikedYou(data ?? []))
-    }, 900)
+  function handleLikedBack(_profileId: string) {
+    setTimeout(() => fetchAll(true), 900)
   }
 
   const unmatched = likedYou.filter(l => !l.is_matched)
@@ -532,11 +648,18 @@ export default function MatchesPage() {
 
       {/* ── Stats bar ── */}
       <div className="px-4 sm:px-6 mb-8">
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <Heart size={18} className="text-gold fill-gold" />
             <span className="text-sm font-bold uppercase tracking-widest text-gold">Connections</span>
           </div>
+          <button
+            onClick={refresh}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 px-3 py-1.5 glass rounded-xl text-xs text-white/40 hover:text-white/70 transition-colors disabled:opacity-40">
+            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+            {refreshing ? 'Refreshing…' : 'Refresh'}
+          </button>
         </div>
         <div className="grid grid-cols-3 gap-3">
           {[
@@ -576,6 +699,17 @@ export default function MatchesPage() {
           )}
         </div>
 
+        {/* Locked notice */}
+        {!loadingLikes && likedYou.length > 0 && !canSeeProfiles && (
+          <div className="mx-4 sm:mx-6 mb-3 flex items-center gap-3 px-4 py-3 rounded-2xl"
+            style={{ background: 'rgba(201,168,76,0.07)', border: '1px solid rgba(201,168,76,0.18)' }}>
+            <Lock size={14} style={{ color: '#C9A84C' }} className="shrink-0" />
+            <p className="text-xs text-white/50 flex-1">
+              Profiles are hidden. <button onClick={() => setShowUpgrade(true)} className="text-gold underline underline-offset-2 font-semibold">Unlock with Professional + Verified</button>
+            </p>
+          </div>
+        )}
+
         {loadingLikes ? (
           <div className="flex gap-4 px-4 sm:px-6 overflow-x-auto no-scrollbar pb-1">
             {Array.from({ length: 7 }).map((_, i) => (
@@ -606,7 +740,11 @@ export default function MatchesPage() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.04 }}>
-                <StoryCircle item={item} onClick={() => setActiveStory(item)} />
+                <StoryCircle
+                    item={item}
+                    canSee={canSeeProfiles}
+                    onClick={() => canSeeProfiles ? setActiveStory(item) : setShowUpgrade(true)}
+                  />
               </motion.div>
             ))}
             {/* fade-out fade on right edge */}
@@ -672,9 +810,13 @@ export default function MatchesPage() {
         {activeStory && (
           <StoryPreviewModal
             item={activeStory}
+            canSee={canSeeProfiles}
             onClose={() => setActiveStory(null)}
             onLikedBack={handleLikedBack}
           />
+        )}
+        {showUpgrade && (
+          <UpgradeGateModal onClose={() => setShowUpgrade(false)} />
         )}
       </AnimatePresence>
     </main>
