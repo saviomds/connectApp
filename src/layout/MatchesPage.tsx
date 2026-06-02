@@ -644,7 +644,7 @@ export default function MatchesPage({ canSeeProfiles }: { canSeeProfiles: boolea
   const newMatches = matches.filter(m => !m.conversationId).length
 
   return (
-    <main className="min-h-screen pt-20 pb-28 md:pb-12 max-w-5xl mx-auto">
+    <main className="min-h-screen pt-nav pb-28 md:pb-12 max-w-5xl mx-auto">
 
       {/* ── Stats bar ── */}
       <div className="px-4 sm:px-6 mb-8">
