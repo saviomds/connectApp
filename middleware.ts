@@ -37,7 +37,13 @@ export async function middleware(request: NextRequest) {
 
   // IMPORTANT: getUser() refreshes the access token when expired using the refresh token.
   // The refreshed tokens land in supabaseResponse — always return it (or copy its cookies).
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error } = await supabase.auth.getUser()
+
+  // Stale refresh token in browser cookies (e.g. revoked or from a different environment).
+  // Sign out locally to clear the invalid cookies — the user is not authenticated.
+  if (error?.code === 'refresh_token_not_found') {
+    await supabase.auth.signOut({ scope: 'local' })
+  }
 
   const path = request.nextUrl.pathname
 

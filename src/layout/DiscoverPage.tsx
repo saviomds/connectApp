@@ -106,8 +106,8 @@ export default async function DiscoverPage() {
     .filter(r => r.direction === 'like' || r.direction === 'super_like')
     .map(r => r.target_id)
 
-  // Run cleanup (non-blocking failure — try/catch inside)
-  await cleanOrphanedSwipes(user.id, likeTargetIds)
+  // Fire-and-forget — cleanup should never block the page
+  cleanOrphanedSwipes(user.id, likeTargetIds)
 
   // Combine all IDs that should be hidden from the feed
   const swipedIds  = (swipedRows ?? []).map((r: { target_id: string }) => r.target_id)

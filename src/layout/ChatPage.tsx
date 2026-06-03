@@ -430,7 +430,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
 
   // ── Realtime subscriptions ────────────────────────────────────
   useEffect(() => {
-    if (!convId || !currentUserId) return
+    if (!convId || !currentUserId || !otherId) return
 
     const channel = supabase
       .channel(`chat:${convId}`, { config: { broadcast: { self: false } } })
@@ -456,10 +456,10 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
           setMessages(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m))
         }
       )
-      // Other user online status
+      // Other user online status — filter to only the other user to avoid platform-wide noise
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles' },
+        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${otherId}` },
         payload => {
           const p = payload.new as { id: string; is_online: boolean }
           setOtherProfile(prev => prev?.id === p.id ? { ...prev, is_online: p.is_online } : prev)
@@ -480,7 +480,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
     channelRef.current = channel
     return () => { supabase.removeChannel(channel) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [convId, currentUserId])
+  }, [convId, currentUserId, otherId])
 
   // ── Auto-scroll ───────────────────────────────────────────────
   useEffect(() => {
@@ -628,13 +628,17 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
     if (res.ok) router.push('/discover')
   }
 
-  // ── Derived: seen index ───────────────────────────────────────
-  const lastSeenIdx = messages.reduce(
-    (acc, m, i) => (m.sender_id === currentUserId && m.is_seen ? i : acc), -1
+  // ── Derived: last seen message id ────────────────────────────
+  // groups uses spread → new objects → indexOf always -1, so track by id
+  const lastSeenMsgId = useMemo(
+    () => messages.reduce<string | null>(
+      (acc, m) => (m.sender_id === currentUserId && m.is_seen ? m.id : acc), null
+    ),
+    [messages, currentUserId]
   )
 
   // ── Message lookup map (for reply previews) ────────────────
-  const msgMap = new Map(messages.map(m => [m.id, m]))
+  const msgMap = useMemo(() => new Map(messages.map(m => [m.id, m])), [messages])
 
   // ── Group messages by sender for avatar display ───────────────
   const groups = messages.map((m, i) => ({
@@ -654,14 +658,14 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
 
   if (loading) {
     return (
-      <div className="flex flex-col h-screen pt-nav items-center justify-center">
+      <div className="flex flex-col h-dvh pt-nav-flush items-center justify-center">
         <Loader2 size={22} className="animate-spin text-white/30" />
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-screen pt-nav pb-[calc(3.75rem+env(safe-area-inset-bottom,0px))] md:pb-0" onClick={() => setHeaderMenuOpen(false)}>
+    <div className="flex flex-col h-dvh pt-nav-flush pb-[calc(3.75rem+env(safe-area-inset-bottom,0px))] md:pb-0" onClick={() => setHeaderMenuOpen(false)}>
 
       {/* ── Header ── */}
       <div className="glass border-b border-white/[0.06] px-4 py-3 flex items-center gap-3 shrink-0 z-10">
@@ -769,7 +773,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
                   onReply={setReplyingTo}
                   replyToMsg={m.reply_to_id ? (msgMap.get(m.reply_to_id) ?? null) : null}
                   isLastInGroup={m.isLastInGroup}
-                  isLastSeen={messages.indexOf(m) === lastSeenIdx}
+                  isLastSeen={m.id === lastSeenMsgId}
                 />
               ))}
             </div>

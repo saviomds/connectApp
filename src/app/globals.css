@@ -57,8 +57,11 @@
   --bottom-nav-h: calc(3.75rem + env(safe-area-inset-bottom, 0px));
 }
 
-/* Top clearance — clears the fixed top navbar */
-.pt-nav { padding-top: var(--nav-h); }
+/* Top clearance — clears the fixed top navbar + 1.5rem breathing room */
+.pt-nav { padding-top: calc(var(--nav-h) + 1.5rem); }
+
+/* Tight clearance — exact navbar height, no extra gap (chat, full-bleed pages) */
+.pt-nav-flush { padding-top: var(--nav-h); }
 
 /* Bottom clearance — clears the fixed bottom nav on mobile */
 .pb-nav-bottom {

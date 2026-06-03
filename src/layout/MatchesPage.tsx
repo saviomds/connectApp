@@ -680,10 +680,10 @@ export default function MatchesPage({ canSeeProfiles }: { canSeeProfiles: boolea
   const newMatches = matches.filter(m => !m.conversationId).length
 
   return (
-    <main className="min-h-screen pt-nav pb-nav-bottom max-w-5xl mx-auto">
+    <main className="min-h-screen pt-nav pb-nav-bottom max-w-5xl mx-auto px-4 sm:px-6">
 
       {/* ── Stats bar ── */}
-      <div className="px-4 sm:px-6 mb-8">
+      <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <Heart size={18} className="text-gold fill-gold" />
@@ -714,7 +714,7 @@ export default function MatchesPage({ canSeeProfiles }: { canSeeProfiles: boolea
 
       {/* ── Liked You stories strip ── */}
       <section className="mb-10">
-        <div className="px-4 sm:px-6 flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <Heart size={16} className="fill-rose-400 text-rose-400" />
@@ -737,7 +737,7 @@ export default function MatchesPage({ canSeeProfiles }: { canSeeProfiles: boolea
 
         {/* Locked notice */}
         {!loadingLikes && likedYou.length > 0 && !canSeeProfiles && (
-          <div className="mx-4 sm:mx-6 mb-3 flex items-center gap-3 px-4 py-3 rounded-2xl"
+          <div className="mb-3 flex items-center gap-3 px-4 py-3 rounded-2xl"
             style={{ background: 'rgba(201,168,76,0.07)', border: '1px solid rgba(201,168,76,0.18)' }}>
             <Lock size={14} style={{ color: '#C9A84C' }} className="shrink-0" />
             <p className="text-xs text-white/50 flex-1">
@@ -747,7 +747,7 @@ export default function MatchesPage({ canSeeProfiles }: { canSeeProfiles: boolea
         )}
 
         {loadingLikes ? (
-          <div className="flex gap-4 px-4 sm:px-6 overflow-x-auto no-scrollbar pb-1">
+          <div className="flex gap-4 -mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto no-scrollbar pb-1">
             {Array.from({ length: 7 }).map((_, i) => (
               <div key={i} className="flex flex-col items-center gap-2 flex-shrink-0 animate-pulse">
                 <div className="w-[68px] h-[68px] rounded-full bg-white/[0.07]" />
@@ -756,7 +756,7 @@ export default function MatchesPage({ canSeeProfiles }: { canSeeProfiles: boolea
             ))}
           </div>
         ) : likedYou.length === 0 ? (
-          <div className="mx-4 sm:mx-6 glass rounded-2xl px-6 py-5 flex items-center gap-4 border border-white/[0.06]">
+          <div className="glass rounded-2xl px-6 py-5 flex items-center gap-4 border border-white/[0.06]">
             <div className="w-12 h-12 rounded-full bg-white/[0.05] flex items-center justify-center shrink-0">
               <Heart size={20} className="text-white/20" />
             </div>
@@ -768,7 +768,7 @@ export default function MatchesPage({ canSeeProfiles }: { canSeeProfiles: boolea
         ) : (
           <div
             ref={storiesRef}
-            className="flex gap-4 px-4 sm:px-6 overflow-x-auto no-scrollbar pb-2"
+            className="flex gap-4 -mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto no-scrollbar pb-2"
             style={{ scrollbarWidth: 'none' }}
           >
             {likedYou.map((item, i) => (
@@ -790,7 +790,7 @@ export default function MatchesPage({ canSeeProfiles }: { canSeeProfiles: boolea
       </section>
 
       {/* ── Matches section ── */}
-      <section className="px-4 sm:px-6">
+      <section>
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-lg font-bold text-white flex items-center gap-2">

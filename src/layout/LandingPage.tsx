@@ -47,10 +47,10 @@ const AVATARS = [
 
 export default function LandingPage() {
   return (
-    <main className="pt-nav">
+    <main className="pt-nav-flush">
 
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden pt-16 pb-8 sm:pt-0 sm:pb-0">
         <div className="absolute inset-0">
           <Image src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=1600&q=80" alt="" fill className="object-cover opacity-[0.18]" priority />
           <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0B]/60 via-[#0A0A0B]/80 to-[#0A0A0B]" />

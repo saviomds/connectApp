@@ -5,11 +5,15 @@ import { createClient } from '@/lib/supabase/client'
 
 const PING_INTERVAL_MS = 45_000 // ping every 45 s — keeps within 2-min offline threshold
 
+// Single client instance reused across all pings
+const supabase = createClient()
+
 async function setOnline(online: boolean) {
-  // Fix: Check for an active session before pinging the presence API.
-  // This prevents 401 Unauthorized errors on public pages or after logout.
-  const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { session }, error } = await supabase.auth.getSession()
+  if (error?.code === 'refresh_token_not_found') {
+    await supabase.auth.signOut({ scope: 'local' })
+    return
+  }
   if (!session) return
 
   try {

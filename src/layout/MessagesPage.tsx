@@ -27,7 +27,10 @@ export default async function MessagesPage() {
       ),
       messages(id,content,sender_id,is_seen,created_at)
     `)
-    .order('updated_at', { ascending: false });
+    .order('updated_at', { ascending: false })
+    .order('created_at', { referencedTable: 'messages', ascending: false })
+    .limit(30, { referencedTable: 'messages' })
+    .limit(100);
 
   if (error) console.error('Messages page error:', error.message);
 

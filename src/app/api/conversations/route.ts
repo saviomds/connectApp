@@ -27,6 +27,9 @@ export async function GET() {
       messages(id, content, sender_id, is_seen, created_at)
     `)
     .order('updated_at', { ascending: false })
+    .order('created_at', { referencedTable: 'messages', ascending: false })
+    .limit(30, { referencedTable: 'messages' })
+    .limit(100)
 
   if (error) return Response.json({ error: error.message }, { status: 500 })
 
