@@ -1,8 +1,29 @@
 import { createClient } from '@/lib/supabase/server'
 
+const FREE_DAILY_MSG_LIMIT = 20
+
 interface ConvWithMatch {
   id: string
   match: { user1_id: string; user2_id: string }
+}
+
+async function resolveConversation(supabase: Awaited<ReturnType<typeof createClient>>, id: string) {
+  // Try by conversation ID first, then by match_id for legacy links
+  let result = await supabase
+    .from('conversations')
+    .select('id, match:matches!conversations_match_id_fkey(user1_id, user2_id)')
+    .eq('id', id)
+    .single()
+
+  if (result.error || !result.data) {
+    result = await supabase
+      .from('conversations')
+      .select('id, match:matches!conversations_match_id_fkey(user1_id, user2_id)')
+      .eq('match_id', id)
+      .single()
+  }
+
+  return result
 }
 
 export async function GET(
@@ -13,37 +34,30 @@ export async function GET(
   const supabase = await createClient()
   const { searchParams } = new URL(request.url)
   const PAGE_SIZE = 40
-  const before = searchParams.get('before') // cursor: load messages older than this ISO timestamp
+  const before = searchParams.get('before')
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Look up by conversation ID first; fall back to match_id for legacy links
-  let convResult = await supabase
-    .from('conversations')
-    .select('id, match:matches!conversations_match_id_fkey(user1_id, user2_id)')
-    .eq('id', id)
-    .single()
-
-  if (convResult.error || !convResult.data) {
-    convResult = await supabase
-      .from('conversations')
-      .select('id, match:matches!conversations_match_id_fkey(user1_id, user2_id)')
-      .eq('match_id', id)
-      .single()
-  }
-
+  const convResult = await resolveConversation(supabase, id)
   if (convResult.error || !convResult.data) {
     return Response.json({ error: 'Not found' }, { status: 404 })
   }
 
   const conv = convResult.data
   const convId = conv.id
-
   const c = conv as unknown as ConvWithMatch
   if (!c.match || (c.match.user1_id !== user.id && c.match.user2_id !== user.id)) {
     return Response.json({ error: 'Forbidden' }, { status: 403 })
   }
+
+  // Fetch user's tier to gate read receipts
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_premium')
+    .eq('id', user.id)
+    .single()
+  const isPremium = profile?.is_premium ?? false
 
   let q = supabase
     .from('messages')
@@ -57,8 +71,7 @@ export async function GET(
   const { data, error } = await q
   if (error) return Response.json({ error: error.message }, { status: 500 })
 
-  const messages = (data ?? []).reverse() // oldest-first for the UI
-  const hasMore  = (data ?? []).length === PAGE_SIZE
+  const rawMessages = (data ?? []).reverse()
 
   // Mark unread messages from the other person as seen (fire-and-forget)
   supabase
@@ -69,6 +82,16 @@ export async function GET(
     .eq('is_seen', false)
     .then(() => {})
 
+  // Read receipts are Gold/Platinum only.
+  // Free users see is_seen=false on their own messages so no double-checkmark appears.
+  const messages = rawMessages.map(msg => ({
+    ...msg,
+    is_seen: msg.sender_id === user.id
+      ? (isPremium ? msg.is_seen : false)
+      : msg.is_seen,
+  }))
+
+  const hasMore = (data ?? []).length === PAGE_SIZE
   return Response.json({ messages, hasMore })
 }
 
@@ -101,25 +124,37 @@ export async function POST(
     return Response.json({ error: 'media_urls required for media messages' }, { status: 400 })
   }
 
-  let postConvResult = await supabase
-    .from('conversations')
-    .select('id, match:matches!conversations_match_id_fkey(user1_id, user2_id)')
-    .eq('id', id)
+  // Fetch user's tier for free message limit
+  const { data: senderProfile } = await supabase
+    .from('profiles')
+    .select('is_premium')
+    .eq('id', user.id)
     .single()
+  const isPremium = senderProfile?.is_premium ?? false
 
-  if (postConvResult.error || !postConvResult.data) {
-    postConvResult = await supabase
-      .from('conversations')
-      .select('id, match:matches!conversations_match_id_fkey(user1_id, user2_id)')
-      .eq('match_id', id)
-      .single()
+  // Free users: enforce daily message limit across all conversations
+  if (!isPremium) {
+    const todayISO = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+    const { count } = await supabase
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('sender_id', user.id)
+      .gte('created_at', todayISO)
+
+    if ((count ?? 0) >= FREE_DAILY_MSG_LIMIT) {
+      return Response.json(
+        { error: 'Daily message limit reached. Upgrade to Gold for unlimited messaging.', limitReached: true },
+        { status: 429 }
+      )
+    }
   }
 
-  if (postConvResult.error || !postConvResult.data) {
+  const convResult = await resolveConversation(supabase, id)
+  if (convResult.error || !convResult.data) {
     return Response.json({ error: 'Not found' }, { status: 404 })
   }
 
-  const postConv = postConvResult.data
+  const postConv = convResult.data
   const postConvId = postConv.id
   const pc = postConv as unknown as ConvWithMatch
   if (!pc.match || (pc.match.user1_id !== user.id && pc.match.user2_id !== user.id)) {

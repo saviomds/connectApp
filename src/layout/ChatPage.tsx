@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, BadgeCheck, MoreVertical, Send, ImagePlus,
   X, Eye, Trash2, ShieldBan, UserMinus, Loader2, CheckCheck,
-  AlertTriangle, Reply, CornerUpLeft,
+  AlertTriangle, Reply, CornerUpLeft, Crown,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { RealtimeChannel } from '@supabase/supabase-js'
@@ -332,6 +332,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
   const [loadingOlder, setLoadingOlder] = useState(false)
   const [input, setInput]             = useState('')
   const [sending, setSending]         = useState(false)
+  const [msgLimitReached, setMsgLimitReached] = useState(false)
   const [loading, setLoading]         = useState(true)
   const [otherTyping, setOtherTyping] = useState(false)
 
@@ -578,9 +579,14 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: input.trim(), reply_to_id: replyId }),
     })
-    if (res.ok) {
+    if (res.status === 429) {
+      const body = await res.json()
+      if (body.limitReached) {
+        setInput(input.trim()) // restore what they typed
+        setMsgLimitReached(true)
+      }
+    } else if (res.ok) {
       const data = await res.json()
-      // POST still returns the single message object directly (status 201)
       const m: Message = data
       setMessages(prev => prev.find(x => x.id === m.id) ? prev : [...prev, m])
     }
@@ -828,6 +834,20 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
             <Eye size={12} />
             View once
           </button>
+        </div>
+      )}
+
+      {/* ── Free user message limit banner ── */}
+      {msgLimitReached && (
+        <div className="px-4 py-2.5 flex items-center gap-3 shrink-0"
+          style={{ background: 'rgba(201,168,76,0.08)', borderTop: '1px solid rgba(201,168,76,0.2)' }}>
+          <Crown size={14} style={{ color: '#C9A84C' }} className="shrink-0" />
+          <p className="text-xs text-white/60 flex-1">Daily message limit reached.</p>
+          <a href="/premium"
+            className="shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-xl text-black"
+            style={{ background: '#C9A84C' }}>
+            Upgrade
+          </a>
         </div>
       )}
 

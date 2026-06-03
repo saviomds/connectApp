@@ -44,10 +44,22 @@ export async function GET() {
   const user = await getCachedUser()
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const supabase = await createClient()
+
+  // Gate: requires Gold/Platinum AND Verified (same rule as the UI)
+  const { data: self } = await supabase
+    .from('profiles')
+    .select('is_premium, is_verified')
+    .eq('id', user.id)
+    .single()
+
+  if (!self?.is_premium || !self?.is_verified) {
+    return Response.json({ error: 'Requires Gold or Platinum + Verified' }, { status: 403 })
+  }
+
   // Use service role to read swipes where this user is the TARGET —
   // the default RLS policy only exposes swipes the caller sent.
   const db = getDb()
-  const supabase = await createClient()   // used for matches (RLS allows participant read)
 
   if (!db) {
     // Service role key not configured — fall back gracefully
