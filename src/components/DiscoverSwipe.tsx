@@ -140,6 +140,11 @@ function ProfileSheet({ profile, onClose, onSwipe }: {
   const allPhotos = [profile.avatar_url, ...(profile.photos ?? [])].filter(Boolean) as string[];
   const [photoIdx, setPhotoIdx] = useState(0);
 
+  // Track profile view (fire-and-forget)
+  useEffect(() => {
+    fetch(`/api/profiles/${profile.id}/view`, { method: 'POST' }).catch(() => {})
+  }, [profile.id]);
+
   function prevPhoto() { setPhotoIdx(i => Math.max(0, i - 1)); }
   function nextPhoto() { setPhotoIdx(i => Math.min(allPhotos.length - 1, i + 1)); }
 

@@ -107,7 +107,7 @@ export async function POST(
 
   const body = await request.json() as {
     content?: string
-    type?: 'text' | 'image' | 'album' | 'view_once'
+    type?: 'text' | 'image' | 'album' | 'view_once' | 'voice'
     media_urls?: string[]
     is_view_once?: boolean
     reply_to_id?: string
@@ -120,7 +120,7 @@ export async function POST(
     return Response.json({ error: 'Content is required' }, { status: 400 })
   }
   if (content.length > 4000) return Response.json({ error: 'Message too long' }, { status: 400 })
-  if ((msgType === 'image' || msgType === 'album' || msgType === 'view_once') && mediaUrls.length === 0) {
+  if ((msgType === 'image' || msgType === 'album' || msgType === 'view_once' || msgType === 'voice') && mediaUrls.length === 0) {
     return Response.json({ error: 'media_urls required for media messages' }, { status: 400 })
   }
 

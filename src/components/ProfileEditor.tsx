@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, Plus, Check, Briefcase, MapPin, User, Globe, Link2, CheckCircle, Camera, Loader2, Images } from 'lucide-react'
+import { X, Plus, Check, Briefcase, MapPin, User, Globe, Link2, CheckCircle, Camera, Loader2, Images, Eye, TrendingUp } from 'lucide-react'
 
 interface ProfileData {
   full_name: string
@@ -47,6 +47,15 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
   const [previewUrl, setPreviewUrl] = useState(initialData.avatar_url)
   const [photos, setPhotos] = useState<string[]>(initialData.photos ?? [])
   const [photoUploading, setPhotoUploading] = useState(false)
+
+  const [viewStats, setViewStats] = useState<{ total: number; last30: number } | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/profiles/${initialData.userId}/view`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setViewStats(d) })
+      .catch(() => {})
+  }, [initialData.userId])
 
   const set = (key: keyof ProfileData, val: unknown) =>
     setData((d) => ({ ...d, [key]: val }))
@@ -203,6 +212,29 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
 
         {/* ── Scrollable body ── */}
         <div className="overflow-y-auto flex-1 px-5 py-5 flex flex-col gap-5">
+
+            {/* Profile view stats */}
+            {viewStats !== null && (
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { icon: Eye,        label: 'Total Views',   value: viewStats.total,  color: '#C9A84C' },
+                  { icon: TrendingUp, label: 'Last 30 Days',  value: viewStats.last30, color: '#2ECC71' },
+                ].map(({ icon: Icon, label, value, color }) => (
+                  <div key={label} className="rounded-xl px-4 py-3 flex items-center gap-3"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: `${color}18` }}>
+                      <Icon size={15} style={{ color }} />
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-white leading-none">{value}</p>
+                      <p className="text-[10px] text-white/35 mt-0.5">{label}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Avatar */}
             <div className="flex items-center gap-4">
               <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 relative"

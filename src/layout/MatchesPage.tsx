@@ -361,11 +361,16 @@ function StoryCircle({ item, onClick, canSee }: { item: LikedYouItem; onClick: (
 function StoryPreviewModal({ item, onClose, onLikedBack, canSee }: {
   item: LikedYouItem; onClose: () => void; onLikedBack: (profileId: string) => void; canSee: boolean;
 }) {
-  const [liking, setLiking]         = useState(false)
+  const [liking, setLiking]           = useState(false)
   const [justMatched, setJustMatched] = useState(false)
-  const [newConvId, setNewConvId]   = useState<string | null>(null)
+  const [newConvId, setNewConvId]     = useState<string | null>(null)
   const p = item.profile
   const isSuperLike = item.direction === 'super_like'
+
+  // Track profile view when canSee (fire-and-forget)
+  useEffect(() => {
+    if (canSee) fetch(`/api/profiles/${p.id}/view`, { method: 'POST' }).catch(() => {})
+  }, [p.id, canSee])
 
   async function likeBack() {
     setLiking(true)
