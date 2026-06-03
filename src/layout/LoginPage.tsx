@@ -39,10 +39,14 @@ function LoginForm() {
   };
 
   const handleOAuth = async (provider: 'google') => {
+    // Store destination in a short-lived cookie that survives the OAuth round-trip.
+    // Avoid embedding ?next= inside redirectTo — Supabase appends its own params
+    // to that URL and the whitelist glob can fail when it already has a '?'.
+    document.cookie = `oauth_next=${encodeURIComponent(next)}; path=/; max-age=300; samesite=lax${location.protocol === 'https:' ? '; secure' : ''}`
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${location.origin}/api/auth/callback?next=${encodeURIComponent(next)}` },
+      options: { redirectTo: `${location.origin}/api/auth/callback` },
     });
   };
 
