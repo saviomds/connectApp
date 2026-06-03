@@ -9,12 +9,13 @@ export default async function MatchesRoute() {
   const supabase = await createClient()
   const { data: profile } = await supabase
     .from('profiles')
-    .select('category, is_verified, is_admin')
+    .select('is_verified, is_premium, premium_tier, is_admin')
     .eq('id', user.id)
     .single()
 
+  // Requires Gold or Platinum AND Verified (or admin override)
   const canSeeProfiles =
-    (profile?.category === 'professional' && profile?.is_verified === true) ||
+    ((profile?.is_premium === true) && (profile?.is_verified === true)) ||
     profile?.is_admin === true
 
   return <MatchesPage canSeeProfiles={canSeeProfiles ?? false} />
