@@ -76,9 +76,13 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
     const fd = new FormData()
     fd.append('file', file)
     const res = await fetch('/api/profile/photos', { method: 'POST', body: fd })
+    if (res.status === 401) { router.push('/login?next=/profile'); return }
     if (res.ok) {
       const { photos: updated } = await res.json()
       setPhotos(updated)
+    } else {
+      const { error: err } = await res.json().catch(() => ({ error: 'Photo upload failed' }))
+      setError(err ?? 'Photo upload failed')
     }
     setPhotoUploading(false)
   }
@@ -89,6 +93,7 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url }),
     })
+    if (res.status === 401) { router.push('/login?next=/profile'); return }
     if (res.ok) {
       const { photos: updated } = await res.json()
       setPhotos(updated)
@@ -107,6 +112,7 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
         const fd = new FormData()
         fd.append('file', avatarFile)
         const uploadRes = await fetch('/api/storage/avatar', { method: 'POST', body: fd })
+        if (uploadRes.status === 401) { router.push('/login?next=/profile'); return }
         if (!uploadRes.ok) {
           const { error: uploadErr } = await uploadRes.json()
           throw new Error(uploadErr ?? 'Avatar upload failed')
@@ -136,6 +142,7 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
         }),
       })
 
+      if (res.status === 401) { router.push('/login?next=/profile'); return }
       if (!res.ok) {
         const { error: saveErr } = await res.json()
         throw new Error(saveErr ?? 'Failed to save profile')
@@ -183,6 +190,16 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
             </button>
           </div>
         </div>
+
+        {/* ── Error banner (sticky, always visible) ── */}
+        {error && (
+          <div className="shrink-0 flex items-center gap-2 px-5 py-3 text-sm text-red-400" style={{ background: 'rgba(231,76,60,0.12)', borderBottom: '1px solid rgba(231,76,60,0.2)' }}>
+            <span className="flex-1">{error}</span>
+            <button onClick={() => setError('')} className="text-red-400/60 hover:text-red-400 transition-colors shrink-0">
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
         {/* ── Scrollable body ── */}
         <div className="overflow-y-auto flex-1 px-5 py-5 flex flex-col gap-5">
@@ -408,11 +425,6 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
               </button>
             </div>
 
-            {error && (
-              <div className="flex items-center gap-2 p-3 rounded-xl text-sm text-red-400" style={{ background: 'rgba(231,76,60,0.12)', border: '1px solid rgba(231,76,60,0.25)' }}>
-                {error}
-              </div>
-            )}
           </div>
 
           {/* ── Fixed footer ── */}
