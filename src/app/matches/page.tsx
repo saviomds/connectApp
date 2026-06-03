@@ -18,5 +18,11 @@ export default async function MatchesRoute() {
     ((profile?.is_premium === true) && (profile?.is_verified === true)) ||
     profile?.is_admin === true
 
-  return <MatchesPage canSeeProfiles={canSeeProfiles ?? false} />
+  return (
+    <MatchesPage
+      canSeeProfiles={canSeeProfiles ?? false}
+      isPremium={profile?.is_premium ?? false}
+      isVerified={profile?.is_verified ?? false}
+    />
+  )
 }

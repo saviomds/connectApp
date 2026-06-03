@@ -57,7 +57,13 @@ const FEATURES_COMPARE = [
   { label: 'Verified badge',    icon: Crown,      free: '–',     gold: '–',    platinum: '✓' },
 ];
 
-export default function PremiumPage() {
+export default function PremiumPage({
+  isPremium = false,
+  premiumTier = null,
+}: {
+  isPremium?: boolean
+  premiumTier?: 'gold' | 'platinum' | null
+}) {
   const router = useRouter();
   const [billing, setBilling]       = useState<'monthly' | 'yearly'>('monthly');
   const [selected, setSelected]     = useState('gold');
@@ -140,17 +146,34 @@ export default function PremiumPage() {
             const planId = billing === 'monthly' ? plan.monthlyPlanId : plan.yearlyPlanId;
             const isLoading = loadingPlan === planId;
 
+            // Determine if the user already owns this plan
+            const isCurrentPlan =
+              (plan.id === 'free'     && !isPremium) ||
+              (plan.id === 'gold'     && isPremium && premiumTier === 'gold') ||
+              (plan.id === 'platinum' && isPremium && premiumTier === 'platinum');
+
+            // Gold users can upgrade to Platinum but shouldn't re-buy Gold
+            const isDowngrade = plan.id === 'gold' && isPremium && premiumTier === 'platinum';
+
             return (
               <div key={plan.id}
                 onClick={() => setSelected(plan.id)}
                 className={clsx('relative rounded-3xl p-6 cursor-pointer transition-all', isSelected && 'scale-[1.02]')}
                 style={{
                   background: plan.color,
-                  border: `1.5px solid ${isSelected ? plan.border : 'rgba(255,255,255,0.1)'}`,
-                  boxShadow: isSelected && plan.id !== 'free' ? `0 0 32px ${plan.border}40` : 'none',
+                  border: `1.5px solid ${isCurrentPlan ? '#2ECC71' : isSelected ? plan.border : 'rgba(255,255,255,0.1)'}`,
+                  boxShadow: isCurrentPlan
+                    ? '0 0 28px rgba(46,204,113,0.2)'
+                    : isSelected && plan.id !== 'free' ? `0 0 32px ${plan.border}40` : 'none',
                 }}>
 
-                {plan.badge && (
+                {/* Current plan badge overrides the plan's own badge */}
+                {isCurrentPlan ? (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold text-black whitespace-nowrap flex items-center gap-1.5"
+                    style={{ background: '#2ECC71' }}>
+                    <Check size={10} /> Current Plan
+                  </div>
+                ) : plan.badge && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold text-black whitespace-nowrap" style={{ background: plan.textColor }}>
                     {plan.badge}
                   </div>
@@ -184,7 +207,19 @@ export default function PremiumPage() {
                   ))}
                 </div>
 
-                {plan.id !== 'free' && planId ? (
+                {isCurrentPlan ? (
+                  /* User already on this plan */
+                  <div className="w-full py-3 rounded-2xl font-semibold text-sm text-center flex items-center justify-center gap-2"
+                    style={{ background: 'rgba(46,204,113,0.12)', color: '#2ECC71', border: '1px solid rgba(46,204,113,0.25)' }}>
+                    <Check size={14} /> Active Plan
+                  </div>
+                ) : isDowngrade ? (
+                  /* Already on a higher plan */
+                  <div className="w-full py-3 rounded-2xl text-sm text-center text-white/30"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    Included in Platinum
+                  </div>
+                ) : plan.id !== 'free' && planId ? (
                   <button
                     onClick={(e) => { e.stopPropagation(); handleSubscribe(planId); }}
                     disabled={isLoading}
@@ -193,13 +228,15 @@ export default function PremiumPage() {
                   >
                     {isLoading ? (
                       <><Loader2 size={16} className="animate-spin" /> Processing…</>
+                    ) : isPremium && plan.id === 'platinum' ? (
+                      'Upgrade to Platinum'
                     ) : (
                       isSelected ? `Get ${plan.name}` : `Choose ${plan.name}`
                     )}
                   </button>
                 ) : (
-                  <Link href="/signup" className="block w-full py-3 rounded-2xl font-semibold text-sm text-center bg-white/[0.06] text-white/60 hover:text-white hover:bg-white/10 transition-all">
-                    Start Free
+                  <Link href="/discover" className="block w-full py-3 rounded-2xl font-semibold text-sm text-center bg-white/[0.06] text-white/60 hover:text-white hover:bg-white/10 transition-all">
+                    Continue Free
                   </Link>
                 )}
               </div>

@@ -42,7 +42,7 @@ function useBoostCountdown(boostedUntil: string | null) {
 // ── Single badge row ───────────────────────────────────────────
 function BadgeRow({
   icon, iconBg, iconBorder, title, description,
-  status, // 'active' | 'pending' | 'rejected' | 'locked'
+  status, activeLabel,
   action,
 }: {
   icon: React.ReactNode
@@ -51,10 +51,11 @@ function BadgeRow({
   title: string
   description: string
   status: 'active' | 'pending' | 'rejected' | 'locked'
+  activeLabel?: string   // overrides the default chip label when status==='active'
   action?: React.ReactNode
 }) {
   const statusChip = {
-    active:   { label: 'Applied',  bg: 'rgba(46,204,113,0.13)', color: '#2ECC71', border: 'rgba(46,204,113,0.3)' },
+    active:   { label: activeLabel ?? 'Active', bg: 'rgba(46,204,113,0.13)', color: '#2ECC71', border: 'rgba(46,204,113,0.3)' },
     pending:  { label: 'Pending',  bg: 'rgba(243,156,18,0.13)', color: '#F39C12', border: 'rgba(243,156,18,0.3)' },
     rejected: { label: 'Rejected', bg: 'rgba(231,76,60,0.13)',  color: '#E74C3C', border: 'rgba(231,76,60,0.3)'  },
     locked:   { label: 'Locked',   bg: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.25)', border: 'rgba(255,255,255,0.1)' },
@@ -135,6 +136,7 @@ export default function BadgesPanel({
           title="Verified"
           description="Identity confirmed · trusted by the community"
           status="active"
+          activeLabel="Verified"
         />
       ) : verificationStatus === 'pending' || verifySubmitted ? (
         <BadgeRow
@@ -188,6 +190,7 @@ export default function BadgesPanel({
           title="Gold Member"
           description="Unlimited likes · see who liked you · boosts"
           status="active"
+          activeLabel="Gold"
         />
       ) : (
         <BadgeRow
@@ -221,6 +224,7 @@ export default function BadgesPanel({
           title="Platinum Member"
           description="Unlimited super likes · daily boosts · platinum badge"
           status="active"
+          activeLabel="Platinum"
         />
       ) : (
         <BadgeRow

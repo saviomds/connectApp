@@ -170,7 +170,15 @@ function useExpiry(expiresAt: string | null) {
 }
 
 // ─── Upgrade gate modal ───────────────────────────────────────
-function UpgradeGateModal({ onClose }: { onClose: () => void }) {
+function UpgradeGateModal({ onClose, isPremium, isVerified }: {
+  onClose: () => void
+  isPremium: boolean
+  isVerified: boolean
+}) {
+  // Only show requirements the user hasn't met yet
+  const needsPremium  = !isPremium
+  const needsVerified = !isVerified
+
   return (
     <motion.div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
@@ -192,34 +200,63 @@ function UpgradeGateModal({ onClose }: { onClose: () => void }) {
         <h2 className="text-xl font-bold text-white text-center mb-2">Unlock Who Liked You</h2>
         <p className="text-white/45 text-sm text-center leading-relaxed mb-6">
           See every profile that liked you — faces, names, and more.
-          Requires <span className="text-white/70 font-semibold">Gold or Platinum</span> + <span className="text-white/70 font-semibold">Verified</span>.
+          {needsPremium && needsVerified
+            ? <> Requires <span className="text-white/70 font-semibold">Gold or Platinum</span> + <span className="text-white/70 font-semibold">Verified</span>.</>
+            : needsVerified
+            ? <> One step left: get <span className="text-white/70 font-semibold">Verified</span>.</>
+            : <> One step left: upgrade to <span className="text-white/70 font-semibold">Gold or Platinum</span>.</>}
         </p>
         <div className="flex flex-col gap-2.5 mb-6">
+          {/* Verified requirement — show with checkmark if already met */}
           <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
-            style={{ background: 'rgba(74,144,226,0.08)', border: '1px solid rgba(74,144,226,0.2)' }}>
-            <ShieldCheck size={18} className="text-blue-400 shrink-0" />
+            style={{
+              background: isVerified ? 'rgba(46,204,113,0.07)' : 'rgba(74,144,226,0.08)',
+              border: `1px solid ${isVerified ? 'rgba(46,204,113,0.25)' : 'rgba(74,144,226,0.2)'}`,
+            }}>
+            {isVerified
+              ? <BadgeCheck size={18} className="fill-green-400 text-white shrink-0" />
+              : <ShieldCheck size={18} className="text-blue-400 shrink-0" />}
             <div>
-              <p className="text-white text-sm font-semibold">Get Verified</p>
-              <p className="text-white/40 text-xs">Submit your ID for a blue verification badge</p>
+              <p className="text-white text-sm font-semibold">
+                {isVerified ? 'Verified ✓' : 'Get Verified'}
+              </p>
+              <p className="text-white/40 text-xs">
+                {isVerified ? 'Your identity is confirmed' : 'Submit your ID for a blue verification badge'}
+              </p>
             </div>
-            <Link href="/verify" onClick={onClose}
-              className="ml-auto shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold text-blue-300"
-              style={{ background: 'rgba(74,144,226,0.15)', border: '1px solid rgba(74,144,226,0.3)' }}>
-              Verify
-            </Link>
+            {!isVerified && (
+              <Link href="/verify" onClick={onClose}
+                className="ml-auto shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold text-blue-300"
+                style={{ background: 'rgba(74,144,226,0.15)', border: '1px solid rgba(74,144,226,0.3)' }}>
+                Verify
+              </Link>
+            )}
           </div>
+
+          {/* Premium requirement — show with checkmark if already met */}
           <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
-            style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)' }}>
-            <Crown size={18} style={{ color: '#C9A84C' }} className="shrink-0" />
+            style={{
+              background: isPremium ? 'rgba(46,204,113,0.07)' : 'rgba(201,168,76,0.08)',
+              border: `1px solid ${isPremium ? 'rgba(46,204,113,0.25)' : 'rgba(201,168,76,0.2)'}`,
+            }}>
+            {isPremium
+              ? <BadgeCheck size={18} className="fill-green-400 text-white shrink-0" />
+              : <Crown size={18} style={{ color: '#C9A84C' }} className="shrink-0" />}
             <div>
-              <p className="text-white text-sm font-semibold">Gold or Platinum</p>
-              <p className="text-white/40 text-xs">Unlock full access to premium features</p>
+              <p className="text-white text-sm font-semibold">
+                {isPremium ? 'Gold / Platinum ✓' : 'Gold or Platinum'}
+              </p>
+              <p className="text-white/40 text-xs">
+                {isPremium ? 'Premium membership active' : 'Unlock full access to premium features'}
+              </p>
             </div>
-            <Link href="/premium" onClick={onClose}
-              className="ml-auto shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold text-black"
-              style={{ background: '#C9A84C' }}>
-              Upgrade
-            </Link>
+            {!isPremium && (
+              <Link href="/premium" onClick={onClose}
+                className="ml-auto shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold text-black"
+                style={{ background: '#C9A84C' }}>
+                Upgrade
+              </Link>
+            )}
           </div>
         </div>
         <button onClick={onClose}
@@ -663,7 +700,11 @@ function MatchCard({ match, onRemove, onExtend }: {
 type SortKey = 'newest' | 'online' | 'new_only'
 
 // ─── Page ─────────────────────────────────────────────────────
-export default function MatchesPage({ canSeeProfiles }: { canSeeProfiles: boolean }) {
+export default function MatchesPage({ canSeeProfiles, isPremium, isVerified }: {
+  canSeeProfiles: boolean
+  isPremium: boolean
+  isVerified: boolean
+}) {
   const [matches,      setMatches]      = useState<MatchItem[]>([])
   const [likedYou,     setLikedYou]     = useState<LikedYouItem[]>([])
   const [loading,      setLoading]      = useState(true)
@@ -952,7 +993,7 @@ export default function MatchesPage({ canSeeProfiles }: { canSeeProfiles: boolea
           <StoryPreviewModal item={activeStory} canSee={canSeeProfiles}
             onClose={() => setActiveStory(null)} onLikedBack={handleLikedBack} />
         )}
-        {showUpgrade && <UpgradeGateModal onClose={() => setShowUpgrade(false)} />}
+        {showUpgrade && <UpgradeGateModal onClose={() => setShowUpgrade(false)} isPremium={isPremium} isVerified={isVerified} />}
         {extendTarget && <ExtendModal matchName={extendTarget} onClose={() => setExtendTarget(null)} />}
       </AnimatePresence>
     </main>
