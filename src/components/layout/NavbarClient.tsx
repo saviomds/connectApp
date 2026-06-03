@@ -122,11 +122,10 @@ export default function NavbarClient({ userName, avatarUrl, unreadCount, likedYo
           style={{
             background: '#0A0A0B',
             borderTop: '1px solid rgba(255,255,255,0.08)',
-            /* flush with screen — no gap, no float */
             paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           }}
         >
-          <div className="flex items-center h-[60px] px-2">
+          <div className="flex items-center h-[54px]">
             {navItems.map(({ href, label, icon: Icon, badge }) => {
               const active = pathname.startsWith(href);
               return (

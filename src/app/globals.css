@@ -54,7 +54,7 @@
   /* Fixed top navbar: 64px header + device status bar */
   --nav-h:        calc(4rem + env(safe-area-inset-top,    0px));
   /* Fixed bottom nav: 60px bar + home indicator */
-  --bottom-nav-h: calc(3.75rem + env(safe-area-inset-bottom, 0px));
+  --bottom-nav-h: calc(3.375rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* Top clearance — clears the fixed top navbar + 1.5rem breathing room */
