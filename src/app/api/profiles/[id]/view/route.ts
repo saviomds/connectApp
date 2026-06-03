@@ -12,10 +12,11 @@ export async function POST(
   const supabase = await createClient()
 
   // Upsert a view record for (viewer, viewed, today).
-  // The unique index on (viewer_id, viewed_id, date) prevents duplicates.
+  // The UNIQUE constraint on (viewer_id, viewed_id, view_date) prevents duplicates.
+  const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
   await supabase.from('profile_views').upsert(
-    { viewer_id: user.id, viewed_id: viewedId },
-    { onConflict: 'viewer_id,viewed_id,(created_at::date)', ignoreDuplicates: true }
+    { viewer_id: user.id, viewed_id: viewedId, view_date: today },
+    { onConflict: 'viewer_id,viewed_id,view_date', ignoreDuplicates: true }
   )
 
   return Response.json({ ok: true })
