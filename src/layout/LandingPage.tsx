@@ -61,7 +61,7 @@ export default function LandingPage() {
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
           <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full text-sm font-medium mb-8 animate-fade-up" style={{ color: '#C9A84C' }}>
             <Zap size={14} style={{ fill: '#C9A84C', color: '#C9A84C' }} />
-            The premium social discovery platform
+            The Premium Social Discovery Platform
           </div>
           <h1 className="text-5xl sm:text-7xl font-bold tracking-tight text-white mb-6 animate-fade-up-delay-1 leading-tight">
             Discover Real<br />
