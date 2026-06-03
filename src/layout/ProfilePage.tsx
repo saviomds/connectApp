@@ -85,9 +85,17 @@ export default async function ProfilePage() {
   return (
     <div className="min-h-screen pt-nav pb-nav-bottom">
 
-      {/* ── Cover banner — starts below the fixed navbar ── */}
+      {/* ── Cover banner — tinted by tier ── */}
       <div className="relative h-36 sm:h-44 overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, rgba(201,168,76,0.4) 0%, rgba(155,109,255,0.3) 40%, rgba(74,144,226,0.35) 80%, rgba(0,212,170,0.2) 100%)' }}>
+        style={{
+          background: p.premium_tier === 'platinum'
+            ? 'linear-gradient(135deg, rgba(155,109,255,0.5) 0%, rgba(196,181,253,0.25) 50%, rgba(74,144,226,0.2) 100%)'
+            : p.is_premium
+            ? 'linear-gradient(135deg, rgba(201,168,76,0.45) 0%, rgba(226,192,104,0.25) 50%, rgba(155,109,255,0.2) 100%)'
+            : p.is_verified
+            ? 'linear-gradient(135deg, rgba(74,144,226,0.4) 0%, rgba(147,197,253,0.2) 50%, rgba(0,212,170,0.2) 100%)'
+            : 'linear-gradient(135deg, rgba(201,168,76,0.25) 0%, rgba(155,109,255,0.2) 40%, rgba(74,144,226,0.2) 80%, rgba(0,212,170,0.15) 100%)',
+        }}>
         {/* Noise texture */}
         <div className="absolute inset-0 opacity-25"
           style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.4\'/%3E%3C/svg%3E")', backgroundSize: '200px' }} />
@@ -101,17 +109,31 @@ export default async function ProfilePage() {
         {/* ── Avatar row — avatar overlaps cover, actions on the right ── */}
         <div className="flex items-end justify-between -mt-12 sm:-mt-14 mb-5 relative z-10">
 
-          {/* Avatar */}
+          {/* Avatar — ring colour reflects actual tier */}
           <div className="relative shrink-0">
             <div className="rounded-[22px]"
-              style={{ background: 'linear-gradient(135deg, #C9A84C, #E2C068, #C9A84C)', padding: '3px' }}>
+              style={{
+                padding: '3px',
+                background: p.premium_tier === 'platinum'
+                  ? 'linear-gradient(135deg, #9B6DFF, #C4B5FD, #9B6DFF)'
+                  : p.is_premium
+                  ? 'linear-gradient(135deg, #C9A84C, #E2C068, #C9A84C)'
+                  : p.is_verified
+                  ? 'linear-gradient(135deg, #4A90E2, #93C5FD, #4A90E2)'
+                  : 'linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.08))',
+              }}>
               <div className="rounded-[20px] overflow-hidden border-4 border-[#0A0A0B] w-24 h-24 sm:w-28 sm:h-28 relative bg-white/5">
                 {p.avatar_url ? (
                   <Image src={p.avatar_url} alt={p.full_name} fill
                     className="object-cover" sizes="112px" />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-3xl font-bold"
-                    style={{ background: 'rgba(201,168,76,0.15)', color: '#C9A84C' }}>
+                    style={{
+                      background: p.premium_tier === 'platinum'
+                        ? 'rgba(155,109,255,0.15)'
+                        : 'rgba(201,168,76,0.15)',
+                      color: p.premium_tier === 'platinum' ? '#9B6DFF' : '#C9A84C',
+                    }}>
                     {p.full_name.charAt(0).toUpperCase()}
                   </div>
                 )}
