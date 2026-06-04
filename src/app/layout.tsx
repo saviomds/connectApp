@@ -60,7 +60,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const user = await getCachedUser()
 
   return (
-    <html lang="en" data-scroll-behavior="smooth" className={`${geist.variable} h-full`}>
+    <html lang="en" data-scroll-behavior="smooth" className={`${geist.variable} h-full`} suppressHydrationWarning>
       <head><ThemeScript /></head>
       <body className="min-h-full bg-bg-primary text-text-primary">
         <Suspense fallback={<NavbarShell />}>
