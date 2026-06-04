@@ -79,7 +79,9 @@ export default async function DiscoverPage() {
     supabase
       .from('swipes')
       .select('target_id, direction')
-      .eq('swiper_id', user.id),
+      .eq('swiper_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(500),
     supabase
       .from('blocks')
       .select('blocked_id, blocker_id')

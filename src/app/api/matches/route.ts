@@ -31,6 +31,7 @@ export async function GET() {
     `)
     .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
     .order('created_at', { ascending: false })
+    .limit(200)
 
   if (error) return Response.json({ error: error.message }, { status: 500 })
 

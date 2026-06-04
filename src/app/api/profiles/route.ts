@@ -27,7 +27,10 @@ export async function GET(request: Request) {
 
   // IDs to exclude: already swiped + self + blocked (both directions)
   const [{ data: swipedRows }, { data: blockedRows }] = await Promise.all([
-    supabase.from('swipes').select('target_id').eq('swiper_id', user.id),
+    supabase.from('swipes').select('target_id')
+      .eq('swiper_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(500),
     supabase.from('blocks').select('blocked_id, blocker_id'),
   ])
 

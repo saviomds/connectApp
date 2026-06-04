@@ -3,9 +3,10 @@
 import { useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-const PING_INTERVAL_MS = 45_000 // ping every 45 s — keeps within 2-min offline threshold
+// 90 s heartbeat — halves DB write load vs the old 45 s.
+// The offline threshold is 2 min (set in upsert_presence), so 90 s stays comfortably within it.
+const PING_INTERVAL_MS = 90_000
 
-// Single client instance reused across all pings
 const supabase = createClient()
 
 async function setOnline(online: boolean) {
@@ -21,7 +22,7 @@ async function setOnline(online: boolean) {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ online }),
-      keepalive: true, // allows the request to outlive the page for the offline beacon
+      keepalive: true,
     })
   } catch {
     // silent — presence is best-effort
@@ -29,24 +30,30 @@ async function setOnline(online: boolean) {
 }
 
 export default function PresenceTracker() {
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const intervalRef  = useRef<ReturnType<typeof setInterval> | null>(null)
+  const lastPingRef  = useRef<number>(0) // timestamp of the most recent ping
+
+  function ping() {
+    lastPingRef.current = Date.now()
+    setOnline(true)
+  }
 
   useEffect(() => {
-    // Mark online immediately
-    setOnline(true)
+    ping()
 
-    // Heartbeat while tab is active
+    // Heartbeat — skip if we already pinged within the last 60 s
+    // (e.g. the visibility handler fired just before this tick)
     intervalRef.current = setInterval(() => {
-      if (!document.hidden) setOnline(true)
+      if (document.hidden) return
+      if (Date.now() - lastPingRef.current < 60_000) return
+      ping()
     }, PING_INTERVAL_MS)
 
-    // Re-ping when the tab becomes visible again
     const handleVisibility = () => {
-      if (!document.hidden) setOnline(true)
+      if (!document.hidden) ping()
     }
     document.addEventListener('visibilitychange', handleVisibility)
 
-    // Mark offline when the page unloads (keepalive ensures it fires)
     const handleUnload = () => setOnline(false)
     window.addEventListener('beforeunload', handleUnload)
 
@@ -56,6 +63,7 @@ export default function PresenceTracker() {
       window.removeEventListener('beforeunload', handleUnload)
       setOnline(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return null
