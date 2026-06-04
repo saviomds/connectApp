@@ -237,6 +237,89 @@ button, a, label, [role="button"] {
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
+/* ── Light mode theme ────────────────────────────────────────────── */
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+html[data-theme="light"] body {
+  background-color: #F2F2F7 !important;
+  color: #1A1A1E !important;
+}
+
+html[data-theme="light"] .glass {
+  background: rgba(255,255,255,0.78) !important;
+  border-color: rgba(0,0,0,0.07) !important;
+}
+html[data-theme="light"] .glass-md {
+  background: rgba(255,255,255,0.90) !important;
+  border-color: rgba(0,0,0,0.09) !important;
+}
+html[data-theme="light"] .glass-heavy {
+  background: rgba(255,255,255,0.96) !important;
+  border-color: rgba(0,0,0,0.11) !important;
+}
+html[data-theme="light"] .modal {
+  background: #FFFFFF !important;
+  border-color: rgba(0,0,0,0.09) !important;
+  box-shadow: 0 0 0 1px rgba(201,168,76,0.05), 0 24px 60px rgba(0,0,0,0.12) !important;
+}
+html[data-theme="light"] .modal-row {
+  background: rgba(0,0,0,0.02) !important;
+  border-color: rgba(0,0,0,0.06) !important;
+}
+html[data-theme="light"] .modal-row:hover {
+  background: rgba(0,0,0,0.04) !important;
+}
+
+/* Text */
+html[data-theme="light"] .text-white      { color: #1A1A1E !important; }
+html[data-theme="light"] .text-white\/80  { color: rgba(26,26,30,0.80) !important; }
+html[data-theme="light"] .text-white\/70  { color: rgba(26,26,30,0.70) !important; }
+html[data-theme="light"] .text-white\/60  { color: rgba(26,26,30,0.60) !important; }
+html[data-theme="light"] .text-white\/50  { color: rgba(26,26,30,0.50) !important; }
+html[data-theme="light"] .text-white\/45  { color: rgba(26,26,30,0.45) !important; }
+html[data-theme="light"] .text-white\/40  { color: rgba(26,26,30,0.40) !important; }
+html[data-theme="light"] .text-white\/35  { color: rgba(26,26,30,0.35) !important; }
+html[data-theme="light"] .text-white\/30  { color: rgba(26,26,30,0.30) !important; }
+html[data-theme="light"] .text-white\/25  { color: rgba(26,26,30,0.25) !important; }
+html[data-theme="light"] .placeholder-white\/25::placeholder { color: rgba(26,26,30,0.25) !important; }
+
+/* Backgrounds */
+html[data-theme="light"] .bg-white\/\[0\.06\] { background: rgba(0,0,0,0.04) !important; }
+html[data-theme="light"] .bg-white\/\[0\.08\] { background: rgba(0,0,0,0.06) !important; }
+html[data-theme="light"] .bg-white\/\[0\.03\] { background: rgba(0,0,0,0.02) !important; }
+html[data-theme="light"] .bg-white\/10       { background: rgba(0,0,0,0.07) !important; }
+
+/* Borders */
+html[data-theme="light"] .border-white\/\[0\.05\] { border-color: rgba(0,0,0,0.05) !important; }
+html[data-theme="light"] .border-white\/\[0\.06\] { border-color: rgba(0,0,0,0.06) !important; }
+html[data-theme="light"] .border-white\/\[0\.08\] { border-color: rgba(0,0,0,0.08) !important; }
+html[data-theme="light"] .border-white\/10        { border-color: rgba(0,0,0,0.10) !important; }
+html[data-theme="light"] .border-white\/\[0\.11\] { border-color: rgba(0,0,0,0.11) !important; }
+
+/* Fixed bars */
+html[data-theme="light"] header { background: rgba(242,242,247,0.88) !important; border-bottom-color: rgba(0,0,0,0.08) !important; }
+html[data-theme="light"] nav.fixed { background: rgba(255,255,255,0.95) !important; border-top-color: rgba(0,0,0,0.08) !important; }
+
+/* Inputs in light mode */
+html[data-theme="light"] input,
+html[data-theme="light"] textarea,
+html[data-theme="light"] select {
+  color: #1A1A1E !important;
+  background: rgba(0,0,0,0.04) !important;
+  border-color: rgba(0,0,0,0.10) !important;
+}
+
+/* Scrollbar */
+html[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); }
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.22); }
+
+/* Shimmer in light mode */
+html[data-theme="light"] .animate-shimmer {
+  background: linear-gradient(90deg,rgba(0,0,0,0.04) 25%,rgba(0,0,0,0.08) 50%,rgba(0,0,0,0.04) 75%) !important;
+}
+
 /* Shimmer loading animation */
 @keyframes shimmer {
   0%   { background-position: -200% 0; }

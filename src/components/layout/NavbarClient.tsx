@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Compass, Heart, MessageCircle, User, Crown } from 'lucide-react';
+import { Compass, Heart, MessageCircle, User, Crown, Grid2x2, Star } from 'lucide-react';
 import { clsx } from 'clsx';
 import NotificationBell from './NotificationBell';
 
@@ -22,10 +22,11 @@ export default function NavbarClient({ userName, avatarUrl, unreadCount, likedYo
   const initial = userName?.charAt(0)?.toUpperCase() ?? '?';
 
   const navItems = [
-    { href: '/discover', label: 'Discover', icon: Compass, badge: 0 },
-    { href: '/matches',  label: 'Matches',  icon: Heart,   badge: likedYouCount },
-    { href: '/messages', label: 'Messages', icon: MessageCircle, badge: unreadCount },
-    { href: '/profile',  label: 'Profile',  icon: User,    badge: 0 },
+    { href: '/discover',   label: 'Discover',  icon: Compass,       badge: 0 },
+    { href: '/explore',    label: 'Explore',   icon: Grid2x2,       badge: 0 },
+    { href: '/matches',    label: 'Matches',   icon: Heart,         badge: likedYouCount },
+    { href: '/messages',   label: 'Messages',  icon: MessageCircle, badge: unreadCount },
+    { href: '/profile',    label: 'Profile',   icon: User,          badge: 0 },
   ];
 
   return (
@@ -92,6 +93,17 @@ export default function NavbarClient({ userName, avatarUrl, unreadCount, likedYo
 
                 <NotificationBell />
 
+                <Link href="/top-picks"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold hover:opacity-80 transition-opacity"
+                  style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.18)', color: '#C9A84C' }}>
+                  <Star size={12} />
+                  Top Picks
+                </Link>
+                <Link href="/double-date"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold hover:opacity-80 transition-opacity"
+                  style={{ background: 'rgba(232,99,122,0.08)', border: '1px solid rgba(232,99,122,0.18)', color: '#E8637A' }}>
+                  ❤️ Double Date
+                </Link>
                 <Link
                   href="/premium"
                   className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold hover:opacity-80 transition-opacity"

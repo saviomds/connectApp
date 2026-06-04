@@ -1,8 +1,8 @@
 'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Check, Crown, Zap, Star, Eye, Heart, TrendingUp, Shield, Loader2 } from 'lucide-react';
+import { Check, Crown, Zap, Star, Eye, Heart, TrendingUp, Shield, Loader2, BookOpen, BadgeCheck, ArrowRight } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { PlanId } from '@/lib/stripe';
 
@@ -57,14 +57,111 @@ const FEATURES_COMPARE = [
   { label: 'Verified badge',    icon: Crown,      free: '–',     gold: '–',    platinum: '✓' },
 ];
 
+// ── Professional Benefits Section ─────────────────────────────────────
+function ProfessionalBenefits({ isProfessional }: { isProfessional: boolean }) {
+  const [claimed, setClaimed]   = useState(false)
+  const [claiming, setClaiming] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/profile').then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.professional_reward_claimed) setClaimed(true) }).catch(() => {})
+  }, [])
+
+  const claim = useCallback(async () => {
+    setClaiming(true)
+    const res = await fetch('/api/boost', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ duration: 24 * 60 }) })
+    if (res.ok) {
+      await fetch('/api/settings/preferences', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ professional_reward_claimed: true }) })
+      setClaimed(true)
+    }
+    setClaiming(false)
+  }, [])
+
+  if (!isProfessional) return (
+    <div className="glass rounded-3xl p-6 flex items-start gap-4 mb-6"
+      style={{ border: '1px solid rgba(201,168,76,0.18)' }}>
+      <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+        style={{ background: 'rgba(201,168,76,0.12)' }}>
+        <BookOpen size={22} style={{ color: '#C9A84C' }} />
+      </div>
+      <div className="flex-1">
+        <p className="font-semibold text-white mb-1">Professional Upgrade Benefits</p>
+        <p className="text-sm text-white/50 mb-3">Get verified as a Professional and unlock exclusive rewards:</p>
+        <div className="flex flex-col gap-2 mb-4">
+          {[
+            '📖 Free e-book: "The Art of Authentic Networking"',
+            '⚡ One-time 24-hour profile boost (valued at $9.99)',
+            '✅ Blue verified badge on your profile',
+            '🎯 Priority placement in discover feed',
+          ].map(item => (
+            <div key={item} className="flex items-start gap-2 text-sm text-white/65">
+              <span>{item}</span>
+            </div>
+          ))}
+        </div>
+        <Link href="/profile"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-black"
+          style={{ background: '#C9A84C' }}>
+          <BadgeCheck size={15} /> Apply for Professional Verification
+          <ArrowRight size={14} />
+        </Link>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="glass rounded-3xl p-6 flex items-start gap-4 mb-6"
+      style={{ border: claimed ? '1px solid rgba(46,204,113,0.30)' : '1px solid rgba(201,168,76,0.30)' }}>
+      <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+        style={{ background: claimed ? 'rgba(46,204,113,0.12)' : 'rgba(201,168,76,0.12)' }}>
+        {claimed ? <Check size={22} style={{ color: '#2ECC71' }} /> : <BookOpen size={22} style={{ color: '#C9A84C' }} />}
+      </div>
+      <div className="flex-1">
+        <div className="flex items-center gap-2 mb-1">
+          <p className="font-semibold text-white">Professional Rewards</p>
+          <BadgeCheck size={15} style={{ color: '#4A90E2' }} />
+        </div>
+        {claimed ? (
+          <div>
+            <p className="text-sm text-white/50 mb-3">You&apos;ve already claimed your professional rewards.</p>
+            <div className="flex flex-col gap-2">
+              <a href="/books/authentic-networking.pdf" download
+                className="inline-flex items-center gap-2 text-sm font-medium text-white/60 hover:text-white transition-colors">
+                <BookOpen size={14} /> Download: The Art of Authentic Networking (PDF)
+              </a>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <p className="text-sm text-white/50 mb-3">You&apos;re verified! Claim your exclusive professional rewards:</p>
+            <div className="flex flex-col gap-2 mb-4">
+              <div className="flex items-center gap-2 text-sm text-white/70"><BookOpen size={14} style={{ color: '#C9A84C' }} /> Free e-book: &quot;The Art of Authentic Networking&quot;</div>
+              <div className="flex items-center gap-2 text-sm text-white/70"><Zap size={14} style={{ color: '#C9A84C' }} /> 24-hour profile boost (valued at $9.99)</div>
+            </div>
+            <button onClick={claim} disabled={claiming}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-black disabled:opacity-60"
+              style={{ background: '#C9A84C' }}>
+              {claiming ? <Loader2 size={14} className="animate-spin" /> : <><Zap size={14} /> Claim Rewards</>}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function PremiumPage({
   isPremium = false,
   premiumTier = null,
+  isProfessional = false,
 }: {
   isPremium?: boolean
   premiumTier?: 'gold' | 'platinum' | null
+  isProfessional?: boolean
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const showProfessionalTab = searchParams.get('tab') === 'professional';
   const [billing, setBilling]       = useState<'monthly' | 'yearly'>('monthly');
   const [selected, setSelected]     = useState('gold');
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
@@ -130,6 +227,9 @@ export default function PremiumPage({
             ))}
           </div>
         </div>
+
+        {/* Professional Benefits */}
+        <ProfessionalBenefits isProfessional={isProfessional} />
 
         {stripeError && (
           <div className="flex items-center gap-3 glass rounded-2xl px-4 py-3 mb-6 max-w-lg mx-auto"

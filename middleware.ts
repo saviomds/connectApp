@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PROTECTED   = ['/discover', '/matches', '/messages', '/profile', '/settings', '/onboarding', '/premium']
+const PROTECTED   = ['/discover', '/matches', '/messages', '/profile', '/settings', '/onboarding', '/premium', '/explore', '/top-picks', '/double-date']
 const AUTH_ROUTES = ['/login', '/signup', '/verify', '/forgot-password', '/reset-password']
 const ADMIN_ROUTES = ['/admin']
 

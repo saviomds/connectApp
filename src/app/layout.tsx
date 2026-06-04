@@ -8,6 +8,7 @@ import PresenceTracker from '@/components/PresenceTracker'
 import TierUpgradeTracker from '@/components/TierUpgradeTracker'
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar'
 import SessionGuard from '@/components/SessionGuard'
+import ThemeScript from '@/components/ThemeScript'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
 
@@ -60,6 +61,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" data-scroll-behavior="smooth" className={`${geist.variable} h-full`}>
+      <head><ThemeScript /></head>
       <body className="min-h-full bg-bg-primary text-text-primary">
         <Suspense fallback={<NavbarShell />}>
           <Navbar />
