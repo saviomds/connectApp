@@ -1,45 +1,55 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-const PROTECTED = ['/discover', '/matches', '/messages', '/profile', '/settings', '/onboarding', '/premium', '/admin']
+const PROTECTED = ['/discover', '/matches', '/messages', '/profile', '/settings', '/onboarding', '/premium', '/admin', '/explore', '/top-picks', '/double-date']
 
-// Listens for auth state changes emitted by the Supabase browser client.
-// Catches two scenarios the middleware cannot:
-//   1. SIGNED_OUT   — the client cleared the session (e.g. another tab signed out,
-//                     or signOut() was called programmatically).
-//   2. SESSION_REFRESH_FAILED — the silent token refresh failed (bad network,
-//                     Supabase temporarily down). The client will NOT retry and
-//                     the session will go stale, so we redirect before the user
-//                     hits a wall of 401s.
-//
-// We do NOT redirect on TOKEN_REFRESHED / SIGNED_IN events — those are
-// handled by the middleware redirectWithCookies flow.
 export default function SessionGuard() {
   const router   = useRouter()
   const pathname = usePathname()
+  // Prevents redirect-storms: once we've decided to redirect, ignore further events.
+  const redirectingRef = useRef(false)
+  // Debounce SESSION_REFRESH_FAILED — transient on free-tier project wakeup.
+  const refreshFailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
+    redirectingRef.current = false
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (redirectingRef.current) return
+
       const isProtected = PROTECTED.some(p => pathname.startsWith(p))
+      if (!isProtected) return
 
-      if (event === 'SIGNED_OUT' && isProtected) {
+      if (event === 'SIGNED_OUT' && !session) {
+        // Only redirect if the session is truly gone — not just a transient clear.
+        redirectingRef.current = true
         router.push(`/login?next=${encodeURIComponent(pathname)}`)
         return
       }
 
-      // SESSION_REFRESH_FAILED is emitted when the silent token refresh fails.
-      // Cast needed because older @supabase/ssr type definitions may not include it.
-      if ((event as string) === 'SESSION_REFRESH_FAILED' && isProtected) {
-        router.push(`/login?next=${encodeURIComponent(pathname)}&expired=1`)
+      if ((event as string) === 'SESSION_REFRESH_FAILED') {
+        // Debounce: wait 4 seconds before acting — free-tier project may be waking up.
+        if (refreshFailTimerRef.current) clearTimeout(refreshFailTimerRef.current)
+        refreshFailTimerRef.current = setTimeout(async () => {
+          // Re-check: if session recovered in the meantime, do nothing.
+          const { data } = await supabase.auth.getSession()
+          if (data.session) return
+          if (!redirectingRef.current) {
+            redirectingRef.current = true
+            router.push(`/login?next=${encodeURIComponent(pathname)}&expired=1`)
+          }
+        }, 4000)
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+      if (refreshFailTimerRef.current) clearTimeout(refreshFailTimerRef.current)
+    }
   }, [pathname, router])
 
   return null

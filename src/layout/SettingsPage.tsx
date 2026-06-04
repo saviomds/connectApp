@@ -7,10 +7,9 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Lock, Bell, Shield, Trash2, LogOut,
   ChevronRight, Eye, EyeOff, CheckCircle, ShieldCheck, Loader2,
-  Sun, Moon, MessageSquare, MapPin, Users, Zap, BookOpen,
+  Sun, Moon, MapPin, Users, Zap, BookOpen,
   HelpCircle, FileText, ScrollText, Scale, ExternalLink, Phone,
 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
 
 interface Prefs {
   notify_matches:        boolean
@@ -138,10 +137,11 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
   };
 
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut({ scope: 'local' });
-    router.push('/login');
-    router.refresh();
+    // Use the server-side route so cookies are cleared server-side.
+    // Calling supabase.auth.signOut() here fires a client SIGNED_OUT event
+    // that SessionGuard catches on this protected route, causing a double/race redirect.
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+    router.push('/login')
   };
 
   // ── Toggle component ──────────────────────────────────────────

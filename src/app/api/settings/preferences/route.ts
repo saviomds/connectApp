@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 
-const BOOLEAN_PREFS = ['notify_matches', 'notify_messages', 'show_read_receipts', 'notify_sms', 'free_tonight'] as const
-const STRING_PREFS  = ['show_gender', 'discovery_city', 'discovery_country'] as const
+// Core columns that always exist (shipped in original schema).
+const CORE_COLS  = new Set(['notify_matches', 'notify_messages', 'show_read_receipts'])
+// Extended columns added in new_features.sql migration — may not exist yet.
+const EXT_COLS   = new Set(['notify_sms', 'free_tonight', 'show_gender', 'discovery_city', 'discovery_country'])
 const ALLOWED_GENDER = new Set(['everyone', 'men', 'women'])
 
 export async function GET() {
@@ -9,21 +11,34 @@ export async function GET() {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data } = await supabase
+  // Attempt 1: full query including new columns.
+  const { data, error: queryErr } = await supabase
     .from('profiles')
     .select('notify_matches, notify_messages, show_read_receipts, notify_sms, free_tonight, show_gender, discovery_city, discovery_country')
     .eq('id', user.id)
     .single()
 
+  // Attempt 2: if new columns don't exist yet (migration not run), fall back to core only.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let row: any = data
+  if (queryErr && !row) {
+    const { data: coreData } = await supabase
+      .from('profiles')
+      .select('notify_matches, notify_messages, show_read_receipts')
+      .eq('id', user.id)
+      .single()
+    row = coreData
+  }
+
   return Response.json({
-    notify_matches:     data?.notify_matches     ?? true,
-    notify_messages:    data?.notify_messages    ?? true,
-    show_read_receipts: data?.show_read_receipts ?? true,
-    notify_sms:         data?.notify_sms         ?? false,
-    free_tonight:       data?.free_tonight        ?? false,
-    show_gender:        data?.show_gender         ?? 'everyone',
-    discovery_city:     data?.discovery_city      ?? '',
-    discovery_country:  data?.discovery_country   ?? '',
+    notify_matches:     row?.notify_matches     ?? true,
+    notify_messages:    row?.notify_messages    ?? true,
+    show_read_receipts: row?.show_read_receipts ?? true,
+    notify_sms:         row?.notify_sms         ?? false,
+    free_tonight:       row?.free_tonight        ?? false,
+    show_gender:        row?.show_gender         ?? 'everyone',
+    discovery_city:     row?.discovery_city      ?? '',
+    discovery_country:  row?.discovery_country   ?? '',
   })
 }
 
@@ -33,27 +48,40 @@ export async function PATCH(request: Request) {
   if (error || !user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json() as Record<string, unknown>
-  const update: Record<string, unknown> = {}
+  const fullUpdate: Record<string, unknown> = {}
 
-  for (const key of BOOLEAN_PREFS) {
-    if (typeof body[key] === 'boolean') update[key] = body[key]
-  }
-  for (const key of STRING_PREFS) {
-    if (typeof body[key] === 'string') {
-      if (key === 'show_gender' && !ALLOWED_GENDER.has(body[key] as string)) continue
-      update[key] = body[key]
+  for (const key of [...CORE_COLS, ...EXT_COLS]) {
+    const val = body[key]
+    if (EXT_COLS.has(key as string)) {
+      if (typeof val === 'boolean') fullUpdate[key] = val
+      if (typeof val === 'string') {
+        if (key === 'show_gender' && !ALLOWED_GENDER.has(val)) continue
+        fullUpdate[key] = val
+      }
+    } else if (CORE_COLS.has(key as string) && typeof val === 'boolean') {
+      fullUpdate[key] = val
     }
   }
 
-  if (Object.keys(update).length === 0) {
+  if (Object.keys(fullUpdate).length === 0) {
     return Response.json({ error: 'Nothing to update' }, { status: 400 })
   }
 
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update(update)
-    .eq('id', user.id)
+  // Attempt 1: update everything.
+  const { error: updateErr } = await supabase
+    .from('profiles').update(fullUpdate).eq('id', user.id)
 
-  if (updateError) return Response.json({ error: updateError.message }, { status: 500 })
-  return Response.json({ ok: true, updated: update })
+  if (!updateErr) return Response.json({ ok: true })
+
+  // Attempt 2: migration not yet run — retry with only the core columns.
+  const coreUpdate = Object.fromEntries(
+    Object.entries(fullUpdate).filter(([k]) => CORE_COLS.has(k))
+  )
+  if (Object.keys(coreUpdate).length > 0) {
+    const { error: coreErr } = await supabase
+      .from('profiles').update(coreUpdate).eq('id', user.id)
+    if (coreErr) return Response.json({ error: coreErr.message }, { status: 500 })
+  }
+
+  return Response.json({ ok: true, note: 'Extended columns pending migration' })
 }
