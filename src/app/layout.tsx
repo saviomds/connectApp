@@ -7,6 +7,7 @@ import { getCachedUser } from '@/lib/supabase/server'
 import PresenceTracker from '@/components/PresenceTracker'
 import TierUpgradeTracker from '@/components/TierUpgradeTracker'
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar'
+import SessionGuard from '@/components/SessionGuard'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
 
@@ -63,6 +64,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Suspense fallback={<NavbarShell />}>
           <Navbar />
         </Suspense>
+        <SessionGuard />
         {user && <PresenceTracker />}
         {user && <TierUpgradeTracker userId={user.id} />}
         <ServiceWorkerRegistrar />

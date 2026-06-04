@@ -3,20 +3,16 @@
 import { useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-// 90 s heartbeat — halves DB write load vs the old 45 s.
-// The offline threshold is 2 min (set in upsert_presence), so 90 s stays comfortably within it.
+// 90 s heartbeat — the upsert_presence RPC has a 2-min offline threshold.
 const PING_INTERVAL_MS = 90_000
 
 const supabase = createClient()
 
 async function setOnline(online: boolean) {
-  const { data: { session }, error } = await supabase.auth.getSession()
-  if (error?.code === 'refresh_token_not_found') {
-    await supabase.auth.signOut({ scope: 'local' })
-    return
-  }
-  if (!session) return
-
+  // Fire-and-forget: if this returns 401 the session has expired and the
+  // SessionGuard (or next navigation) will redirect to /login cleanly.
+  // We intentionally do NOT call signOut() here — a heartbeat failure must
+  // never be the thing that logs a user out.
   try {
     await fetch('/api/presence', {
       method: 'PATCH',
@@ -25,13 +21,13 @@ async function setOnline(online: boolean) {
       keepalive: true,
     })
   } catch {
-    // silent — presence is best-effort
+    // Network error — presence is best-effort, ignore silently.
   }
 }
 
 export default function PresenceTracker() {
-  const intervalRef  = useRef<ReturnType<typeof setInterval> | null>(null)
-  const lastPingRef  = useRef<number>(0) // timestamp of the most recent ping
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const lastPingRef = useRef<number>(0)
 
   function ping() {
     lastPingRef.current = Date.now()
@@ -39,19 +35,23 @@ export default function PresenceTracker() {
   }
 
   useEffect(() => {
-    ping()
+    // Confirm we still have a valid session before starting the tracker.
+    // If there is no session at mount time the user is already being redirected
+    // by the middleware / SessionGuard — don't add noise.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) return
 
-    // Heartbeat — skip if we already pinged within the last 60 s
-    // (e.g. the visibility handler fired just before this tick)
-    intervalRef.current = setInterval(() => {
-      if (document.hidden) return
-      if (Date.now() - lastPingRef.current < 60_000) return
       ping()
-    }, PING_INTERVAL_MS)
 
-    const handleVisibility = () => {
-      if (!document.hidden) ping()
-    }
+      intervalRef.current = setInterval(() => {
+        if (document.hidden) return
+        // Skip if we pinged recently (e.g. visibility-change fired just before)
+        if (Date.now() - lastPingRef.current < 60_000) return
+        ping()
+      }, PING_INTERVAL_MS)
+    })
+
+    const handleVisibility = () => { if (!document.hidden) ping() }
     document.addEventListener('visibilitychange', handleVisibility)
 
     const handleUnload = () => setOnline(false)

@@ -12,6 +12,8 @@ function LoginForm() {
   const params = useSearchParams();
   const next = params.get('next') || '/discover';
 
+  const expired = params.get('expired') === '1'
+
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -65,6 +67,12 @@ function LoginForm() {
       </div>
 
       <div className="glass rounded-3xl p-5 sm:p-8">
+        {expired && !error && (
+          <div className="p-3 rounded-xl mb-4 text-sm text-amber-400 flex items-center gap-2"
+            style={{ background: 'rgba(201,168,76,0.10)', border: '1px solid rgba(201,168,76,0.25)' }}>
+            <span>🔒</span> Your session expired. Please sign in again.
+          </div>
+        )}
         {error && (
           <div className="p-3 rounded-xl mb-4 text-sm text-red-400" style={{ background: 'rgba(231,76,60,0.12)', border: '1px solid rgba(231,76,60,0.25)' }}>
             {error}
