@@ -132,8 +132,8 @@ export default function NavbarClient({ userName, avatarUrl, unreadCount, likedYo
         <nav
           className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
           style={{
-            background: '#0A0A0B',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
+            background: 'var(--app-nav-bg)',
+            borderTop: '1px solid var(--app-nav-border)',
             paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           }}
         >
@@ -167,7 +167,7 @@ export default function NavbarClient({ userName, avatarUrl, unreadCount, likedYo
                     {badge > 0 && (
                       <span
                         className="absolute -top-1.5 -right-2.5 min-w-[15px] h-[15px] px-[3px] rounded-full text-[8px] font-black text-white flex items-center justify-center animate-pop leading-none"
-                        style={{ background: '#E8637A', boxShadow: '0 0 0 2px #0A0A0B' }}
+                        style={{ background: '#E8637A', boxShadow: '0 0 0 2px var(--app-nav-bg)' }}
                       >
                         {badge > 9 ? '9+' : badge}
                       </span>
