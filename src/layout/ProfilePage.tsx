@@ -124,7 +124,7 @@ export default async function ProfilePage() {
               }}>
               <div className="rounded-[20px] overflow-hidden border-4 border-[#0A0A0B] w-24 h-24 sm:w-28 sm:h-28 relative bg-white/5">
                 {p.avatar_url ? (
-                  <Image src={p.avatar_url} alt={p.full_name} fill
+                  <Image src={p.avatar_url} alt={p.full_name} fill priority
                     className="object-cover" sizes="112px" />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-3xl font-bold"

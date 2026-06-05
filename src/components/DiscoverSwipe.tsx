@@ -13,6 +13,7 @@ import {
   Crown, Info, ChevronLeft, ChevronRight, Globe, Briefcase,
 } from 'lucide-react';
 import type { DbProfile } from '@/types/database';
+import SplashScreen from './SplashScreen';
 
 const SWIPE_THRESHOLD = 80;
 const FLY_DISTANCE    = 600;
@@ -79,6 +80,8 @@ function ReportModal({ targetId, targetName, onClose }: {
         initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
         transition={{ type: 'spring', damping: 26, stiffness: 280 }}>
         <div className="h-[2px] w-full" style={{ background: 'linear-gradient(90deg,transparent,rgba(231,76,60,0.55),transparent)' }} />
+        {/* Drag handle for mobile */}
+        <div className="w-10 h-1 rounded-full bg-white/10 mx-auto mt-3 sm:hidden" />
         {done ? (
           <div className="text-center py-10 px-6">
             <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
@@ -163,6 +166,9 @@ function ProfileSheet({ profile, onClose, onSwipe }: {
         initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
         onClick={e => e.stopPropagation()}>
+
+        {/* Drag handle for mobile sheet */}
+        <div className="w-12 h-1.5 rounded-full bg-white/10 mx-auto mt-3 absolute top-0 left-1/2 -translate-x-1/2 z-[70] sm:hidden" />
 
         {/* Photo section */}
         <div className="relative h-72 shrink-0 overflow-hidden">
@@ -364,8 +370,8 @@ function SwipeCard({ profile, isTop, stackOffset, onSwipe }: {
       className="absolute inset-0 rounded-3xl overflow-hidden cursor-grab active:cursor-grabbing select-none"
       style={{
         x: isTop ? x : 0, rotate: isTop ? rotate : 0,
-        scale: 1 - stackOffset * 0.05, y: stackOffset * 14,
-        opacity: stackOffset > 2 ? 0 : 1, zIndex: 10 - stackOffset,
+        scale: 1 - stackOffset * 0.045, y: stackOffset * 12,
+        opacity: stackOffset > 3 ? 0 : 1, zIndex: 10 - stackOffset,
         touchAction: 'none',
         boxShadow: tierCardStyle(tier),
       }}
@@ -449,7 +455,7 @@ function SwipeCard({ profile, isTop, stackOffset, onSwipe }: {
         )}
 
         {profile.prompts && profile.prompts.length > 0 ? (
-          <div className="mb-3 px-3 py-2.5 rounded-xl"
+          <div className="mb-3 px-3 py-2.5 rounded-xl relative group/prompt"
             style={{ background: 'rgba(201,168,76,0.10)', border: '1px solid rgba(201,168,76,0.22)' }}>
             <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: 'rgba(201,168,76,0.7)' }}>
               {profile.prompts[0].question}
@@ -457,6 +463,12 @@ function SwipeCard({ profile, isTop, stackOffset, onSwipe }: {
             <p className="text-white/80 text-xs leading-relaxed line-clamp-2 italic">
               &ldquo;{profile.prompts[0].answer}&rdquo;
             </p>
+            <button 
+              onClick={(e) => { e.stopPropagation(); setExpandedProfile(profile); }}
+              className="absolute -right-2 -top-2 w-8 h-8 rounded-full bg-gold flex items-center justify-center text-black shadow-lg scale-0 group-hover/prompt:scale-100 transition-transform duration-200"
+            >
+              <MessageSquareQuote size={14} />
+            </button>
           </div>
         ) : profile.bio ? (
           <p className="text-white/60 text-xs mb-3 line-clamp-2 leading-relaxed italic">
@@ -483,41 +495,66 @@ function MatchModal({ profile, onClose, onMessage }: { profile: DbProfile; onClo
   return (
     <motion.div className="fixed inset-0 z-50 flex items-center justify-center px-4"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <div className="absolute inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={onClose} />
       <motion.div
-        className="relative modal rounded-2xl w-full max-w-sm overflow-hidden"
-        initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        className="relative modal rounded-3xl w-full max-w-sm overflow-hidden"
+        initial={{ scale: 0.8, opacity: 0, y: 16 }} animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.85, opacity: 0 }}
-        transition={{ type: 'spring', damping: 22, stiffness: 300 }}
-        style={{ border: '1px solid rgba(201,168,76,0.25)' }}>
-        <div className="h-[2px] w-full" style={{ background: 'linear-gradient(90deg,transparent,rgba(201,168,76,0.65),transparent)' }} />
-        <div className="p-8 text-center">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="w-20 h-20 rounded-full overflow-hidden shrink-0"
-              style={{ border: '2.5px solid #C9A84C', boxShadow: '0 0 20px rgba(201,168,76,0.35)' }}>
-              {profile.avatar_url
-                ? <Image src={profile.avatar_url} alt={profile.full_name} width={80} height={80} className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center text-2xl font-bold"
-                    style={{ background: 'rgba(201,168,76,0.15)', color: '#C9A84C' }}>{profile.full_name.charAt(0)}</div>
-              }
+        transition={{ type: 'spring', damping: 22, stiffness: 280 }}
+        style={{ border: '1px solid rgba(201,168,76,0.22)' }}>
+
+        <div className="h-[2px] w-full" style={{ background: 'linear-gradient(90deg,transparent,#C9A84C,transparent)' }} />
+
+        {/* Ambient top glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-56 h-36 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.11) 0%, transparent 70%)' }} />
+
+        <div className="p-8 text-center relative">
+          {/* Overlapping dual-ring avatars */}
+          <div className="flex items-center justify-center mb-6" style={{ height: 88 }}>
+            {/* You (left, behind) */}
+            <div className="relative z-10" style={{ marginRight: -20 }}>
+              <div className="w-[76px] h-[76px] rounded-full overflow-hidden flex items-center justify-center"
+                style={{
+                  border: '2px solid #0A0A0B',
+                  boxShadow: '0 0 0 2px rgba(201,168,76,0.45)',
+                  background: 'linear-gradient(135deg, rgba(201,168,76,0.22), rgba(201,168,76,0.06))',
+                }}>
+                <Heart size={30} style={{ color: '#C9A84C', fill: '#C9A84C' }} />
+              </div>
             </div>
-            <div className="text-3xl animate-pulse">💛</div>
+            {/* Match (right, front) */}
+            <div className="relative z-20">
+              <div className="w-[76px] h-[76px] rounded-full overflow-hidden"
+                style={{
+                  border: '2px solid #0A0A0B',
+                  boxShadow: '0 0 0 2.5px #C9A84C, 0 0 24px rgba(201,168,76,0.30)',
+                }}>
+                {profile.avatar_url
+                  ? <Image src={profile.avatar_url} alt={profile.full_name} width={76} height={76} className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center text-2xl font-bold"
+                      style={{ background: 'rgba(201,168,76,0.15)', color: '#C9A84C' }}>{profile.full_name.charAt(0)}</div>
+                }
+              </div>
+            </div>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">It&apos;s a Match!</h2>
-          <p className="text-white/60 text-sm mb-7">
+
+          <h2 className="text-2xl font-black text-white mb-1 tracking-tight">It&apos;s a Match!</h2>
+          <p className="text-sm mb-7 leading-relaxed" style={{ color: 'rgba(255,255,255,0.45)' }}>
             You and <span className="text-white font-semibold">{profile.full_name}</span> liked each other
           </p>
-          <div className="h-px bg-white/[0.07] -mx-8 mb-6" />
+
+          <div className="h-px -mx-8 mb-6" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
           <div className="flex gap-3">
             <button onClick={onClose}
-              className="flex-1 h-11 rounded-xl text-white/65 hover:text-white text-sm font-semibold transition-colors"
-              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)' }}>
+              className="flex-1 h-12 rounded-2xl text-sm font-semibold transition-colors hover:text-white"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', color: 'rgba(255,255,255,0.45)' }}>
               Keep swiping
             </button>
             <button onClick={onMessage}
-              className="flex-1 h-11 rounded-xl font-bold text-black text-sm transition-all active:scale-[0.98]"
-              style={{ background: '#C9A84C', boxShadow: '0 4px 20px rgba(201,168,76,0.40)' }}>
-              Send message
+              className="flex-1 h-12 rounded-2xl font-bold text-black text-sm btn-gold flex items-center justify-center gap-2 transition-all active:scale-[0.97]">
+              <MessageSquareQuote size={15} /> Message
             </button>
           </div>
         </div>
@@ -765,6 +802,7 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
   const [swiped, setSwiped]             = useState<Set<string>>(new Set());
   const [fetching, setFetching]         = useState(false);
   const [expandedProfile, setExpandedProfile] = useState<DbProfile | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   // Limits
   const [remainingSwipes, setRemainingSwipes]         = useState<number | null>(null);
@@ -903,15 +941,32 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
     (filters.gender !== 'any' && isGold ? 1 : 0);
 
   return (
-    <div className="h-dvh flex flex-col pt-nav-flush pb-14 md:pb-0 overflow-hidden">
+    <div className="h-dvh flex flex-col pt-nav-flush pb-14 md:pb-0 overflow-hidden relative">
+      <AnimatePresence>
+        {isInitializing && (
+          <SplashScreen onComplete={() => setIsInitializing(false)} />
+        )}
+      </AnimatePresence>
+
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0">
-        <div>
-          <h1 className="text-lg font-bold text-white">Discover</h1>
-          <p className="text-white/35 text-xs">
-            {deck.length} profile{deck.length !== 1 ? 's' : ''}{activeFilterCount > 0 ? ' (filtered)' : ' nearby'}
-          </p>
+      <div className="flex items-center justify-between px-4 py-2.5 shrink-0"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+        {/* Brand */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0"
+            style={{ background: 'linear-gradient(135deg, #C9A84C, #E2C068)', boxShadow: '0 2px 10px rgba(201,168,76,0.32)' }}>
+            <Heart size={15} className="text-black fill-black" />
+          </div>
+          <div>
+            <p className="text-[15px] font-black text-white tracking-tight leading-none">VIBRO</p>
+            <p className="text-[10px] leading-none mt-[3px] font-medium" style={{ color: 'rgba(255,255,255,0.28)' }}>
+              {deck.length > 0
+                ? `${deck.length} nearby${activeFilterCount > 0 ? ' · filtered' : ''}`
+                : 'Elite Discovery'}
+            </p>
+          </div>
         </div>
+
         <div className="flex items-center gap-2">
           {!isPremium && remainingSwipes !== null && (
             <button onClick={() => remainingSwipes === 0 ? setShowLimit(true) : undefined}
@@ -925,19 +980,18 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
               {remainingSwipes === 0 ? 'No likes left' : `${remainingSwipes} left`}
             </button>
           )}
-          <Link href="/profile" className="flex items-center gap-2 glass px-3 py-1.5 rounded-full hover:bg-white/10 transition-colors">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-black shrink-0"
-              style={{ background: '#C9A84C' }}>
-              {currentUserId.charAt(0).toUpperCase()}
-            </div>
+          <Link href="/profile"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-black shrink-0 transition-transform hover:scale-105"
+            style={{ background: 'linear-gradient(135deg, #C9A84C, #E2C068)', boxShadow: '0 2px 8px rgba(201,168,76,0.28)' }}>
+            {currentUserId.charAt(0).toUpperCase()}
           </Link>
           <button onClick={undo} disabled={!lastSwiped}
-            className="glass w-9 h-9 rounded-xl flex items-center justify-center text-white/40 hover:text-white disabled:opacity-25 disabled:cursor-not-allowed transition-colors">
+            className="glass w-9 h-9 rounded-xl flex items-center justify-center text-white/40 hover:text-white disabled:opacity-20 disabled:cursor-not-allowed transition-colors">
             <RotateCcw size={16} />
           </button>
           <button onClick={() => setShowFilters(true)}
             className="glass w-9 h-9 rounded-xl flex items-center justify-center transition-colors relative"
-            style={{ color: activeFilterCount > 0 ? '#C9A84C' : 'rgba(255,255,255,0.5)' }}>
+            style={{ color: activeFilterCount > 0 ? '#C9A84C' : 'rgba(255,255,255,0.45)' }}>
             <SlidersHorizontal size={16} />
             {activeFilterCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] font-bold text-black flex items-center justify-center"
@@ -1043,41 +1097,77 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
 
       {/* Action buttons */}
       {deck.length > 0 && (
-        <div className="flex items-center justify-center gap-5 px-4 py-3 shrink-0">
-          <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.93 }} onClick={() => swipe('pass')}
-            className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg"
-            style={{ background: '#16161A', border: '2px solid rgba(231,76,60,0.4)', color: '#E74C3C' }}>
-            <X size={28} strokeWidth={2.5} />
+        <div className="flex items-center justify-center gap-5 sm:gap-7 px-4 py-4 shrink-0"
+          style={{ background: 'linear-gradient(to top, #0A0A0B 60%, transparent)' }}>
+
+          {/* Pass */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.87 }}
+            onClick={() => swipe('pass')}
+            className="w-[60px] h-[60px] sm:w-[66px] sm:h-[66px] rounded-full flex items-center justify-center btn-action-pass"
+            style={{
+              background: 'radial-gradient(circle at 38% 32%, rgba(231,76,60,0.2), #0E0E12 72%)',
+              border: '1.5px solid rgba(231,76,60,0.42)',
+              color: '#E74C3C',
+            }}>
+            <X size={24} strokeWidth={2.5} />
           </motion.button>
 
-          {/* Super like with counter */}
-          <div className="flex flex-col items-center gap-1">
-            <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.93 }}
+          {/* Super like */}
+          <div className="flex flex-col items-center gap-1.5">
+            <motion.button
+              whileHover={{ scale: 1.12 }}
+              whileTap={{ scale: 0.87 }}
               onClick={() => swipe('super_like')}
-              className="w-12 h-12 rounded-full flex items-center justify-center"
-              style={{ background: 'rgba(201,168,76,0.12)', border: '1.5px solid rgba(201,168,76,0.4)', color: '#C9A84C' }}>
-              <Star size={20} />
+              className="w-12 h-12 rounded-full flex items-center justify-center btn-action-star"
+              style={{
+                background: 'radial-gradient(circle at 38% 32%, rgba(201,168,76,0.38), #0E0E12 72%)',
+                border: '1.5px solid rgba(201,168,76,0.55)',
+                color: '#C9A84C',
+              }}>
+              <Star size={17} style={{ fill: '#C9A84C' }} />
             </motion.button>
             {remainingSuperLikes !== null && (
-              <span className="text-[9px] font-bold leading-none"
-                style={{ color: remainingSuperLikes === 0 ? '#E74C3C' : 'rgba(201,168,76,0.7)' }}>
-                {remainingSuperLikes === 0 ? 'None left' : `${remainingSuperLikes} left`}
+              <span className="text-[9px] font-bold tabular-nums leading-none"
+                style={{ color: remainingSuperLikes === 0 ? '#E74C3C' : 'rgba(201,168,76,0.65)' }}>
+                {remainingSuperLikes === 0 ? 'none' : `${remainingSuperLikes}×`}
               </span>
             )}
           </div>
 
-          <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.93 }} onClick={() => swipe('like')}
-            className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg"
-            style={{ background: '#16161A', border: '2px solid rgba(46,204,113,0.4)', color: '#2ECC71' }}>
-            <Heart size={28} strokeWidth={2.5} />
+          {/* Like */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.87 }}
+            onClick={() => swipe('like')}
+            className="w-[60px] h-[60px] sm:w-[66px] sm:h-[66px] rounded-full flex items-center justify-center btn-action-like"
+            style={{
+              background: 'radial-gradient(circle at 38% 32%, rgba(46,204,113,0.2), #0E0E12 72%)',
+              border: '1.5px solid rgba(46,204,113,0.42)',
+              color: '#2ECC71',
+            }}>
+            <Heart size={24} strokeWidth={2.5} />
           </motion.button>
         </div>
       )}
 
       {deck.length > 0 && (
-        <p className="text-center text-xs text-white/20 pb-3 shrink-0">
-          Drag left to pass · right to like · tap ⭐ for super like · <button className="underline" onClick={() => top && setExpandedProfile(top)}>ⓘ view profile</button>
-        </p>
+        <div className="flex items-center justify-center gap-3 pb-3 shrink-0">
+          <div className="flex items-center gap-1 text-[10px] font-medium" style={{ color: 'rgba(231,76,60,0.38)' }}>
+            <X size={9} strokeWidth={3} /> pass
+          </div>
+          <div className="h-3 w-px bg-white/10" />
+          <button
+            onClick={() => top && setExpandedProfile(top)}
+            className="flex items-center gap-1 text-[10px] font-medium text-white/20 hover:text-white/40 transition-colors">
+            <Info size={9} /> profile
+          </button>
+          <div className="h-3 w-px bg-white/10" />
+          <div className="flex items-center gap-1 text-[10px] font-medium" style={{ color: 'rgba(46,204,113,0.38)' }}>
+            like <Heart size={9} strokeWidth={3} />
+          </div>
+        </div>
       )}
 
       {/* Modals */}

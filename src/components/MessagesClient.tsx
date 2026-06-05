@@ -58,6 +58,18 @@ function TierRing({ tier }: { tier: 'gold' | 'platinum' | null }) {
   )
 }
 
+function UnreadBadge({ count }: { count: number }) {
+  if (count <= 0) return null
+  return (
+    <motion.div 
+      initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+      className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold text-black px-1"
+      style={{ background: '#C9A84C', boxShadow: '0 0 8px rgba(201,168,76,0.4)' }}>
+      {count}
+    </motion.div>
+  )
+}
+
 // ─── Compose sheet ────────────────────────────────────────────
 function ComposeSheet({ onClose, existingConvIds }: { onClose: () => void; existingConvIds: Set<string> }) {
   const router = useRouter()
@@ -153,11 +165,14 @@ function ComposeSheet({ onClose, existingConvIds }: { onClose: () => void; exist
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
         onClick={e => e.stopPropagation()}>
 
+        {/* Drag handle indicator */}
+        <div className="w-10 h-1 rounded-full bg-white/10 mx-auto mt-3 sm:hidden" />
+
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-4 shrink-0">
+        <div className="flex items-center justify-between px-5 pt-4 pb-4 shrink-0">
           <h2 className="text-base font-bold text-white">New Message</h2>
           <button onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/[0.07] flex items-center justify-center text-white/40 hover:text-white transition-colors">
+            className="w-8 h-8 rounded-xl bg-white/[0.07] flex items-center justify-center text-white/40 hover:text-white transition-colors">
             <X size={15} />
           </button>
         </div>
@@ -401,12 +416,7 @@ export default function MessagesClient({ currentUserId, initialConversations }: 
                       <div className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full border-2 border-[#0A0A0B]"
                         style={{ background: '#2ECC71' }} />
                     )}
-                    {conv.unread_count > 0 && (
-                      <div className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-[10px] font-bold text-black px-1"
-                        style={{ background: '#C9A84C' }}>
-                        {conv.unread_count}
-                      </div>
-                    )}
+                    <UnreadBadge count={conv.unread_count} />
                   </div>
 
                   {/* Info */}

@@ -109,6 +109,19 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
     }
   }
 
+  const calculateCompleteness = () => {
+    const fields = [
+      data.full_name, data.bio, data.profession, 
+      data.city, data.category, data.age
+    ];
+    const filledFields = fields.filter(f => !!f).length;
+    const photoPoints = (photos.length / 5) * 4; // Photos carry heavy weight
+    const interestPoints = data.interests.length > 0 ? 1 : 0;
+    
+    return Math.min(100, Math.round(((filledFields + photoPoints + interestPoints) / 11) * 100));
+  };
+  const completeness = calculateCompleteness();
+
   const handleSave = async () => {
     setSaving(true)
     setError('')
@@ -183,6 +196,9 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
         {/* Gold accent line */}
         <div className="h-[2px] shrink-0" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.5), transparent)' }} />
 
+        {/* Mobile drag handle */}
+        <div className="w-10 h-1 rounded-full bg-white/10 mx-auto mt-3 sm:hidden" />
+
         {/* ── Fixed header ── */}
         <div className="modal-header flex items-center justify-between px-5 py-4 shrink-0">
           <h2 className="text-base font-bold text-white">Edit Profile</h2>
@@ -213,6 +229,17 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
         {/* ── Scrollable body ── */}
         <div className="overflow-y-auto flex-1 px-5 py-5 flex flex-col gap-5">
 
+            {/* Profile Completion Tracker */}
+            <div className="rounded-2xl p-4 bg-white/[0.03] border border-white/[0.08]">
+              <div className="flex justify-between items-end mb-2">
+                <span className="text-xs font-bold text-white/50 uppercase">Profile Strength</span>
+                <span className="text-sm font-bold text-gold">{completeness}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-gold transition-all duration-500" style={{ width: `${completeness}%` }} />
+              </div>
+            </div>
+
             {/* Profile view stats */}
             {viewStats !== null && (
               <div className="grid grid-cols-2 gap-3">
@@ -238,7 +265,7 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
             {/* Avatar */}
             <div className="flex items-center gap-4">
               <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 relative"
-                style={{ border: '2px solid rgba(201,168,76,0.3)' }}>
+                style={{ border: '2px solid rgba(201,168,76,0.25)', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
                 {previewUrl
                   // eslint-disable-next-line @next/next/no-img-element
                   ? <img src={previewUrl} alt="" className="w-full h-full object-cover" />
@@ -282,7 +309,7 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
               {/* Photo grid */}
               <div className="grid grid-cols-3 gap-2">
                 {photos.map((url, idx) => (
-                  <div key={url} className="relative aspect-square rounded-xl overflow-hidden group">
+                  <div key={url} className="relative aspect-square rounded-xl overflow-hidden group border border-white/5">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={url} alt="" className="w-full h-full object-cover" />
                     {idx === 0 && (

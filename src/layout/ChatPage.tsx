@@ -116,48 +116,88 @@ function TypingDots() {
 
 // ─── Voice note player ────────────────────────────────────────
 function VoicePlayer({ url, isMe }: { url: string; isMe: boolean }) {
-  const [playing, setPlaying] = useState(false)
+  const [playing, setPlaying]   = useState(false)
   const [progress, setProgress] = useState(0)
   const [duration, setDuration] = useState(0)
-  const [elapsed, setElapsed] = useState(0)
-  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [elapsed, setElapsed]   = useState(0)
+  const [loadErr, setLoadErr]   = useState(false)
+  const audioRef   = useRef<HTMLAudioElement | null>(null)
+  const blobUrlRef = useRef('')
 
+  // Fetch blob + force correct MIME — Supabase may serve audio/webm as
+  // application/octet-stream which the <audio> element refuses to decode.
   useEffect(() => {
-    const audio = new Audio(url)
-    audioRef.current = audio
-    audio.onloadedmetadata = () => setDuration(Math.round(audio.duration))
-    audio.ontimeupdate = () => {
-      setElapsed(Math.round(audio.currentTime))
-      setProgress(audio.currentTime / (audio.duration || 1))
+    if (!url) return
+    let cancelled = false
+
+    fetch(url)
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.blob() })
+      .then(rawBlob => {
+        if (cancelled) return
+        const ext  = url.split('?')[0].split('.').pop()?.toLowerCase() ?? 'webm'
+        const mime = (rawBlob.type && rawBlob.type !== 'application/octet-stream')
+          ? rawBlob.type
+          : ext === 'ogg' ? 'audio/ogg' : ext === 'mp4' ? 'audio/mp4' : 'audio/webm'
+        const bu = URL.createObjectURL(new Blob([rawBlob], { type: mime }))
+        blobUrlRef.current = bu
+        const el = audioRef.current
+        if (el) { el.src = bu; el.load() }
+      })
+      .catch(() => { if (!cancelled) setLoadErr(true) })
+
+    return () => {
+      cancelled = true
+      if (blobUrlRef.current) { URL.revokeObjectURL(blobUrlRef.current); blobUrlRef.current = '' }
     }
-    audio.onended = () => { setPlaying(false); setProgress(0); setElapsed(0) }
-    return () => { audio.pause(); audio.src = '' }
   }, [url])
 
   function toggle() {
-    const audio = audioRef.current
-    if (!audio) return
-    if (playing) { audio.pause(); setPlaying(false) }
-    else { audio.play(); setPlaying(true) }
+    const el = audioRef.current
+    if (!el || !blobUrlRef.current) return
+    if (el.paused) {
+      el.volume = 1
+      el.muted  = false
+      el.play().then(() => setPlaying(true)).catch(() => setPlaying(false))
+    } else {
+      el.pause()
+      setPlaying(false)
+    }
   }
 
   const accent = isMe ? 'rgba(0,0,0,0.5)' : '#C9A84C'
 
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 min-w-[160px]">
-      <button onClick={toggle}
-        className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-90"
+      <audio
+        ref={audioRef}
+        preload="none"
+        onLoadedMetadata={() => setDuration(Math.round(audioRef.current?.duration ?? 0))}
+        onTimeUpdate={() => {
+          const el = audioRef.current
+          if (!el) return
+          setElapsed(Math.round(el.currentTime))
+          setProgress(el.currentTime / (el.duration || 1))
+        }}
+        onEnded={() => { setPlaying(false); setProgress(0); setElapsed(0) }}
+        onPause={() => setPlaying(false)}
+        onError={() => { setLoadErr(true); setPlaying(false) }}
+      />
+
+      <button onClick={toggle} disabled={loadErr}
+        className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-90 disabled:opacity-40"
         style={{ background: isMe ? 'rgba(0,0,0,0.2)' : 'rgba(201,168,76,0.18)' }}>
-        {playing
-          ? <Pause size={14} style={{ color: accent }} />
-          : <Play size={14} style={{ color: accent }} className="ml-0.5" />}
+        {loadErr
+          ? <span style={{ fontSize: 12, color: accent }}>✕</span>
+          : playing
+            ? <Pause size={14} style={{ color: accent }} />
+            : <Play  size={14} style={{ color: accent }} className="ml-0.5" />}
       </button>
 
       {/* Waveform bars */}
       <div className="flex-1 flex flex-col gap-1">
         <div className="flex items-end gap-[2px] h-5">
           {Array.from({ length: 20 }).map((_, i) => {
-            const h = 4 + Math.round(Math.sin(i * 0.9) * 6 + Math.cos(i * 0.4) * 4)
+            const h      = 4 + Math.round(Math.sin(i * 0.9) * 6 + Math.cos(i * 0.4) * 4)
             const filled = i / 20 <= progress
             return (
               <div key={i} className="flex-1 rounded-full transition-colors"
@@ -172,7 +212,7 @@ function VoicePlayer({ url, isMe }: { url: string; isMe: boolean }) {
         </div>
         <span className="text-[10px] font-medium leading-none"
           style={{ color: isMe ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.45)' }}>
-          {playing ? fmtDuration(elapsed) : fmtDuration(duration)}
+          {loadErr ? 'unavailable' : playing ? fmtDuration(elapsed) : fmtDuration(duration)}
         </span>
       </div>
     </div>
@@ -617,7 +657,9 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
   async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mr = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+      const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']
+        .find(t => MediaRecorder.isTypeSupported(t)) ?? ''
+      const mr = new MediaRecorder(stream, mimeType ? { mimeType } : undefined)
       audioChunksRef.current = []
       mr.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data) }
       mr.start()
@@ -643,17 +685,37 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
     setRecording(false)
     if (!send || audioChunksRef.current.length === 0) return
 
-    const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+    const recMime = mediaRecorderRef.current?.mimeType || 'audio/webm'
+    const ext = recMime.includes('ogg') ? 'ogg' : recMime.includes('mp4') ? 'mp4' : 'webm'
+    const blob = new Blob(audioChunksRef.current, { type: recMime })
+    console.log('[voice] recorded — size:', blob.size, 'bytes, mime:', recMime, 'chunks:', audioChunksRef.current.length)
+    if (blob.size < 1000) {
+      alert('Recording seems empty (mic may be muted or wrong device selected). Check your browser microphone settings.')
+      return
+    }
     setSendingVoice(true)
-    const path = `${currentUserId}/${Date.now()}.webm`
-    const { error } = await supabase.storage.from('message-media').upload(path, blob)
-    if (!error) {
-      const { data: { publicUrl } } = supabase.storage.from('message-media').getPublicUrl(path)
-      await fetch(`/api/conversations/${convId}/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'voice', media_urls: [publicUrl] }),
-      })
+    const path = `${currentUserId}/${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('message-media').upload(path, blob, {
+      contentType: recMime,
+    })
+    if (error) {
+      console.error('[voice] upload failed:', error.message)
+      alert(`Voice upload failed: ${error.message}`)
+      setSendingVoice(false)
+      return
+    }
+    const { data: { publicUrl } } = supabase.storage.from('message-media').getPublicUrl(path)
+    console.log('[voice] uploaded OK →', publicUrl)
+    const res = await fetch(`/api/conversations/${convId}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'voice', media_urls: [publicUrl] }),
+    })
+    if (res.ok) {
+      const m: Message = await res.json()
+      setMessages(prev => prev.find(x => x.id === m.id) ? prev : [...prev, m])
+    } else {
+      console.error('[voice] message insert failed:', res.status, await res.text())
     }
     setSendingVoice(false)
   }
@@ -757,11 +819,18 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
       return { ...m, reactions: curr }
     }))
 
-    await fetch(`/api/conversations/${convId}/messages/${msg.id}/reactions`, {
+    const res = await fetch(`/api/conversations/${convId}/messages/${msg.id}/reactions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ emoji }),
     })
+    if (res.ok) {
+      const updated: Message = await res.json()
+      setMessages(prev => prev.map(m => m.id === updated.id ? { ...m, reactions: updated.reactions } : m))
+    } else {
+      // Revert optimistic update on error
+      setMessages(prev => prev.map(m => m.id === msg.id ? msg : m))
+    }
   }, [convId, currentUserId])
 
   // ── Per-message actions ────────────────────────────────────────
@@ -842,7 +911,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
 
         {otherProfile?.avatar_url ? (
           <Image src={otherProfile.avatar_url} alt={otherProfile.full_name} width={40} height={40}
-            className="w-10 h-10 rounded-full object-cover shrink-0" />
+            priority className="w-10 h-10 rounded-full object-cover shrink-0" />
         ) : (
           <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
             style={{ background: 'rgba(201,168,76,0.15)', color: '#C9A84C' }}>

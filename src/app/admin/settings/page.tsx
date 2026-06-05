@@ -154,6 +154,12 @@ export default function AdminSettingsPage() {
   const [errorMsg, setErrorMsg]       = useState('')
   const [seeding, setSeeding]         = useState(false)
   const [seedMsg, setSeedMsg]         = useState('')
+  const [resetting, setResetting]         = useState(false)
+  const [resetConfirm, setResetConfirm]   = useState(false)
+  const [resetResult, setResetResult]     = useState<{ ok: boolean; msg: string } | null>(null)
+  const [resettingPB, setResettingPB]     = useState(false)
+  const [resetPBConfirm, setResetPBConfirm] = useState(false)
+  const [resetPBResult, setResetPBResult] = useState<{ ok: boolean; msg: string } | null>(null)
 
   const loadSettings = useCallback(() => {
     setLoading(true)
@@ -207,6 +213,36 @@ export default function AdminSettingsPage() {
     setSeeding(false)
   }
 
+  const handleReset = async () => {
+    setResetting(true)
+    setResetResult(null)
+    try {
+      const res  = await fetch('/api/admin/reset-matches', { method: 'POST' })
+      const json = await res.json() as { ok?: boolean; error?: string }
+      if (res.ok) setResetResult({ ok: true,  msg: 'All swipes, matches, conversations and messages deleted. Discovery is fully reset.' })
+      else        setResetResult({ ok: false, msg: json.error ?? 'Reset failed' })
+    } catch {
+      setResetResult({ ok: false, msg: 'Network error' })
+    }
+    setResetting(false)
+    setResetConfirm(false)
+  }
+
+  const handleResetPB = async () => {
+    setResettingPB(true)
+    setResetPBResult(null)
+    try {
+      const res  = await fetch('/api/admin/reset-passes', { method: 'POST' })
+      const json = await res.json() as { ok?: boolean; error?: string }
+      if (res.ok) setResetPBResult({ ok: true,  msg: 'All passes and blocks cleared. Every user is discoverable again.' })
+      else        setResetPBResult({ ok: false, msg: json.error ?? 'Reset failed' })
+    } catch {
+      setResetPBResult({ ok: false, msg: 'Network error' })
+    }
+    setResettingPB(false)
+    setResetPBConfirm(false)
+  }
+
   const handleSave = async () => {
     setSaving(true); setSaveError(''); setSaved(false)
 
@@ -233,6 +269,120 @@ export default function AdminSettingsPage() {
   const apiKeySettings  = stripeSettings.filter(s =>
     ['stripe_publishable_key', 'stripe_secret_key', 'stripe_webhook_secret'].includes(s.key))
   const priceIdSettings = stripeSettings.filter(s => s.key.endsWith('_price_id'))
+
+  // ── Danger Zone JSX (shared between both non-loading returns) ────────────
+  const dangerZone = (
+    <section className="pt-8 mt-10" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="flex items-center gap-2 mb-5">
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: 'rgba(231,76,60,0.12)', border: '1px solid rgba(231,76,60,0.2)' }}>
+          <AlertTriangle size={15} style={{ color: '#E74C3C' }} />
+        </div>
+        <div>
+          <h2 className="text-base font-semibold text-white">Danger Zone</h2>
+          <p className="text-xs text-white/35">Irreversible actions — data cannot be recovered.</p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl p-5"
+        style={{ background: 'rgba(231,76,60,0.05)', border: '1px solid rgba(231,76,60,0.18)' }}>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-white">Reset All Matching</p>
+            <p className="text-xs text-white/40 mt-1 leading-relaxed max-w-sm">
+              Permanently deletes all swipes, matches, conversations and messages.
+              Every user will be able to discover and swipe on everyone again from scratch.
+            </p>
+          </div>
+          <div className="shrink-0">
+            {!resetConfirm ? (
+              <button
+                onClick={() => setResetConfirm(true)}
+                className="h-9 px-4 rounded-xl text-xs font-semibold transition-all"
+                style={{ background: 'rgba(231,76,60,0.12)', border: '1px solid rgba(231,76,60,0.28)', color: '#E74C3C' }}>
+                Reset Matching
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-white/35">Sure?</span>
+                <button
+                  onClick={() => setResetConfirm(false)}
+                  className="h-8 px-3 rounded-lg text-xs font-medium transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', color: 'rgba(255,255,255,0.5)' }}>
+                  Cancel
+                </button>
+                <button
+                  onClick={handleReset}
+                  disabled={resetting}
+                  className="h-8 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 disabled:opacity-60 transition-all"
+                  style={{ background: '#E74C3C', color: '#fff' }}>
+                  {resetting && <Loader2 size={12} className="animate-spin" />}
+                  {resetting ? 'Resetting…' : 'Yes, reset all'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        {resetResult && (
+          <div className="mt-3 flex items-center gap-2 text-xs"
+            style={{ color: resetResult.ok ? '#2ecc71' : '#E74C3C' }}>
+            {resetResult.ok ? <CheckCircle size={13} /> : <AlertCircle size={13} />}
+            {resetResult.msg}
+          </div>
+        )}
+      </div>
+
+      {/* Reset passes + blocks — lighter action, keeps matches & messages */}
+      <div className="rounded-2xl p-5 mt-3"
+        style={{ background: 'rgba(231,76,60,0.05)', border: '1px solid rgba(231,76,60,0.18)' }}>
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-white">Reset Passes &amp; Blocks</p>
+            <p className="text-xs text-white/40 mt-1 leading-relaxed max-w-sm">
+              Clears all disliked (passed) swipes and all blocks for every user.
+              Existing matches, conversations and messages are kept intact.
+              Users who were passed on or blocked will appear in discovery again.
+            </p>
+          </div>
+          <div className="shrink-0">
+            {!resetPBConfirm ? (
+              <button
+                onClick={() => setResetPBConfirm(true)}
+                className="h-9 px-4 rounded-xl text-xs font-semibold transition-all"
+                style={{ background: 'rgba(231,76,60,0.12)', border: '1px solid rgba(231,76,60,0.28)', color: '#E74C3C' }}>
+                Reset Passes &amp; Blocks
+              </button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-white/35">Sure?</span>
+                <button
+                  onClick={() => setResetPBConfirm(false)}
+                  className="h-8 px-3 rounded-lg text-xs font-medium transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)', color: 'rgba(255,255,255,0.5)' }}>
+                  Cancel
+                </button>
+                <button
+                  onClick={handleResetPB}
+                  disabled={resettingPB}
+                  className="h-8 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 disabled:opacity-60 transition-all"
+                  style={{ background: '#E74C3C', color: '#fff' }}>
+                  {resettingPB && <Loader2 size={12} className="animate-spin" />}
+                  {resettingPB ? 'Resetting…' : 'Yes, reset'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        {resetPBResult && (
+          <div className="mt-3 flex items-center gap-2 text-xs"
+            style={{ color: resetPBResult.ok ? '#2ecc71' : '#E74C3C' }}>
+            {resetPBResult.ok ? <CheckCircle size={13} /> : <AlertCircle size={13} />}
+            {resetPBResult.msg}
+          </div>
+        )}
+      </div>
+    </section>
+  )
 
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) return (
@@ -335,6 +485,8 @@ export default function AdminSettingsPage() {
           </ol>
         </div>
         </>}
+
+        {dangerZone}
       </div>
     )
   }
@@ -446,6 +598,8 @@ export default function AdminSettingsPage() {
           </span>
         )}
       </div>
+
+      {dangerZone}
     </div>
   )
 }
