@@ -337,9 +337,10 @@ function CardPhoto({ photo, name, priority }: { photo: string | null; name: stri
 }
 
 // ─── Swipe card ───────────────────────────────────────────────
-function SwipeCard({ profile, isTop, stackOffset, onSwipe }: {
+function SwipeCard({ profile, isTop, stackOffset, onSwipe, onExpand }: {
   profile: DbProfile; isTop: boolean; stackOffset: number;
   onSwipe?: (dir: 'like' | 'pass' | 'super_like') => void;
+  onExpand?: (p: DbProfile) => void;
 }) {
   const x           = useMotionValue(0);
   const rotate      = useTransform(x, [-300, 300], [-18, 18]);
@@ -464,7 +465,7 @@ function SwipeCard({ profile, isTop, stackOffset, onSwipe }: {
               &ldquo;{profile.prompts[0].answer}&rdquo;
             </p>
             <button 
-              onClick={(e) => { e.stopPropagation(); setExpandedProfile(profile); }}
+              onClick={(e) => { e.stopPropagation(); onExpand?.(profile); }}
               className="absolute -right-2 -top-2 w-8 h-8 rounded-full bg-gold flex items-center justify-center text-black shadow-lg scale-0 group-hover/prompt:scale-100 transition-transform duration-200"
             >
               <MessageSquareQuote size={14} />
@@ -1037,7 +1038,8 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ x: lastSwiped?.dir === 'like' || lastSwiped?.dir === 'super_like' ? FLY_DISTANCE : -FLY_DISTANCE, rotate: lastSwiped?.dir === 'like' || lastSwiped?.dir === 'super_like' ? 20 : -20, opacity: 0, transition: { duration: 0.35, ease: 'easeOut' } }}>
                     <SwipeCard profile={profile} isTop={stackOffset === 0} stackOffset={stackOffset}
-                      onSwipe={stackOffset === 0 ? swipe : undefined} />
+                      onSwipe={stackOffset === 0 ? swipe : undefined}
+                      onExpand={setExpandedProfile} />
                   </motion.div>
                 </AnimatePresence>
               );

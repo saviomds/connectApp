@@ -8,7 +8,7 @@ import {
   ArrowLeft, BadgeCheck, MoreVertical, Send, ImagePlus,
   X, Eye, Trash2, ShieldBan, UserMinus, Loader2, CheckCheck,
   AlertTriangle, Reply, CornerUpLeft, Crown, Mic, MicOff,
-  Play, Pause, SmilePlus,
+  Play, Pause, SmilePlus, Pencil,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { RealtimeChannel } from '@supabase/supabase-js'
@@ -28,6 +28,7 @@ interface Message {
   created_at: string
   reply_to_id: string | null
   reactions?: Record<string, string[]>
+  edited_at?: string | null
 }
 
 interface OtherProfile {
@@ -250,7 +251,7 @@ function MediaGrid({ urls, onOpen }: { urls: string[]; onOpen: (url: string) => 
 
 // ─── Single message bubble ────────────────────────────────────
 function Bubble({
-  msg, isMe, other, currentUserId, onDelete, onViewOnce, onImageOpen,
+  msg, isMe, other, currentUserId, onDelete, onEdit, onViewOnce, onImageOpen,
   onReply, onReact, replyToMsg, isLastInGroup, isLastSeen, convId,
 }: {
   msg: Message
@@ -258,6 +259,7 @@ function Bubble({
   other: OtherProfile | null
   currentUserId: string
   onDelete: (id: string) => void
+  onEdit: (msg: Message) => void
   onViewOnce: (id: string) => void
   onImageOpen: (url: string) => void
   onReply: (msg: Message) => void
@@ -417,6 +419,12 @@ function Bubble({
                   className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/70 hover:bg-white/[0.06] whitespace-nowrap w-full transition-colors">
                   <Reply size={13} /> Reply
                 </button>
+                {isMe && !msg.is_deleted && msg.type === 'text' && (
+                  <button onClick={() => { onEdit(msg); setMenuOpen(false) }}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/70 hover:bg-white/[0.06] whitespace-nowrap w-full transition-colors">
+                    <Pencil size={13} /> Edit
+                  </button>
+                )}
                 {isMe && (
                   <button onClick={() => { onDelete(msg.id); setMenuOpen(false) }}
                     className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 whitespace-nowrap w-full transition-colors">
@@ -451,6 +459,7 @@ function Bubble({
 
         {/* Time + seen */}
         <div className={`flex items-center gap-1 mt-0.5 ${isMe ? 'justify-end' : 'justify-start'}`}>
+          {msg.edited_at && <span className="text-[10px] text-white/25">edited ·</span>}
           <span className="text-[10px] text-white/25">{fmtTime(msg.created_at)}</span>
           {isMe && isLastSeen && msg.is_seen && (
             <CheckCheck size={10} style={{ color: '#C9A84C' }} />
@@ -513,8 +522,9 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
   const audioChunksRef    = useRef<Blob[]>([])
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
 
-  // Reply + UI state
+  // Reply + Edit + UI state
   const [replyingTo, setReplyingTo]       = useState<Message | null>(null)
+  const [editingMsg, setEditingMsg]       = useState<Message | null>(null)
   const [lightboxUrl, setLightboxUrl]     = useState<string | null>(null)
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false)
   const [confirmDialog, setConfirmDialog] = useState<'unmatch' | 'block' | null>(null)
@@ -755,6 +765,16 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
   // ── Send ───────────────────────────────────────────────────────
   async function send() {
     if (sending || uploading) return
+
+    // Edit mode — patch existing message instead of creating new
+    if (editingMsg) {
+      const trimmed = input.trim()
+      if (!trimmed) return
+      setInput(''); setEditingMsg(null)
+      await editMessage(editingMsg.id, trimmed)
+      return
+    }
+
     const hasText  = !!input.trim()
     const hasMedia = pendingFiles.length > 0
     if (!hasText && !hasMedia) return
@@ -840,6 +860,22 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'delete' }),
     })
+  }
+
+  async function editMessage(msgId: string, content: string) {
+    const trimmed = content.trim()
+    if (!trimmed) return
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, content: trimmed, edited_at: new Date().toISOString() } : m))
+    await fetch(`/api/conversations/${convId}/messages/${msgId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'edit', content: trimmed }),
+    })
+  }
+
+  function startEdit(msg: Message) {
+    setEditingMsg(msg)
+    setReplyingTo(null)
+    setInput(msg.content)
   }
 
   async function markViewOnce(msgId: string) {
@@ -989,6 +1025,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
                   other={otherProfile}
                   currentUserId={currentUserId}
                   onDelete={deleteMessage}
+                  onEdit={startEdit}
                   onViewOnce={markViewOnce}
                   onImageOpen={setLightboxUrl}
                   onReply={setReplyingTo}
@@ -1035,6 +1072,21 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
             </p>
           </div>
           <button onClick={() => setReplyingTo(null)}
+            className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-white/40 hover:text-white shrink-0 transition-colors">
+            <X size={12} />
+          </button>
+        </div>
+      )}
+
+      {/* ── Edit indicator strip ── */}
+      {editingMsg && (
+        <div className="px-4 py-2 border-t border-white/[0.06] flex items-center gap-3 bg-white/[0.03]">
+          <Pencil size={14} style={{ color: '#C9A84C' }} className="shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[11px] font-semibold" style={{ color: '#C9A84C' }}>Editing message</p>
+            <p className="text-xs text-white/40 truncate">{editingMsg.content}</p>
+          </div>
+          <button onClick={() => { setEditingMsg(null); setInput('') }}
             className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-white/40 hover:text-white shrink-0 transition-colors">
             <X size={12} />
           </button>

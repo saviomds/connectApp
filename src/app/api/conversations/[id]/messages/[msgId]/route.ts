@@ -10,7 +10,7 @@ export async function PATCH(
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await request.json() as { action: 'delete' | 'view_once' }
+  const body = await request.json() as { action: 'delete' | 'view_once' | 'edit'; content?: string }
 
   // Fetch the message with conversation participant check
   const { data: msg, error: msgError } = await supabase
@@ -62,6 +62,20 @@ export async function PATCH(
     const { data, error } = await supabase
       .from('messages')
       .update({ viewed_at: new Date().toISOString() })
+      .eq('id', msgId)
+      .select()
+      .single()
+    if (error) return Response.json({ error: error.message }, { status: 500 })
+    return Response.json(data)
+  }
+
+  if (body.action === 'edit') {
+    if (msg.sender_id !== user.id) return Response.json({ error: 'Forbidden' }, { status: 403 })
+    const content = (body.content ?? '').trim()
+    if (!content || content.length > 4000) return Response.json({ error: 'Invalid content' }, { status: 400 })
+    const { data, error } = await supabase
+      .from('messages')
+      .update({ content, edited_at: new Date().toISOString() })
       .eq('id', msgId)
       .select()
       .single()

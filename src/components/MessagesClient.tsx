@@ -71,7 +71,12 @@ function UnreadBadge({ count }: { count: number }) {
 }
 
 // ─── Compose sheet ────────────────────────────────────────────
-function ComposeSheet({ onClose, existingConvIds }: { onClose: () => void; existingConvIds: Set<string> }) {
+function ComposeSheet({ onClose, existingConvIds, conversations, currentUserId }: {
+  onClose: () => void
+  existingConvIds: Set<string>
+  conversations: ConvRow[]
+  currentUserId: string
+}) {
   const router = useRouter()
   const [matches, setMatches]   = useState<MatchItem[]>([])
   const [loading, setLoading]   = useState(true)
@@ -142,7 +147,16 @@ function ComposeSheet({ onClose, existingConvIds }: { onClose: () => void; exist
             <span className="font-semibold text-sm text-white/90 truncate">{m.profile.full_name}</span>
             {m.profile.is_verified && <BadgeCheck size={13} className="fill-blue-400 text-blue-300 shrink-0" />}
           </div>
-          <p className="text-xs text-white/40 mt-0.5">{m.conversationId ? 'Continue chat' : 'Say hello'}</p>
+          <p className="text-xs text-white/40 mt-0.5 truncate">
+          {m.conversationId
+            ? (() => {
+                const conv = conversations.find(c => c.id === m.conversationId)
+                if (!conv?.last_message) return 'Continue chat'
+                const mine = conv.last_message_sender_id === currentUserId
+                return mine ? `You: ${conv.last_message}` : conv.last_message
+              })()
+            : 'Say hello 👋'}
+        </p>
         </div>
         <div className="shrink-0">
           {isBusy
@@ -444,7 +458,8 @@ export default function MessagesClient({ currentUserId, initialConversations }: 
       {/* Compose sheet */}
       <AnimatePresence>
         {showCompose && (
-          <ComposeSheet onClose={() => setShowCompose(false)} existingConvIds={existingConvIds} />
+          <ComposeSheet onClose={() => setShowCompose(false)} existingConvIds={existingConvIds}
+            conversations={conversations} currentUserId={currentUserId} />
         )}
       </AnimatePresence>
     </div>
