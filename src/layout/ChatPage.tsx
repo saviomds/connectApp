@@ -122,39 +122,16 @@ function VoicePlayer({ url, isMe }: { url: string; isMe: boolean }) {
   const [duration, setDuration] = useState(0)
   const [elapsed, setElapsed]   = useState(0)
   const [loadErr, setLoadErr]   = useState(false)
-  const audioRef   = useRef<HTMLAudioElement | null>(null)
-  const blobUrlRef = useRef('')
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  // Fetch blob + force correct MIME — Supabase may serve audio/webm as
-  // application/octet-stream which the <audio> element refuses to decode.
-  useEffect(() => {
-    if (!url) return
-    let cancelled = false
-
-    fetch(url)
-      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.blob() })
-      .then(rawBlob => {
-        if (cancelled) return
-        const ext  = url.split('?')[0].split('.').pop()?.toLowerCase() ?? 'webm'
-        const mime = (rawBlob.type && rawBlob.type !== 'application/octet-stream')
-          ? rawBlob.type
-          : ext === 'ogg' ? 'audio/ogg' : ext === 'mp4' ? 'audio/mp4' : 'audio/webm'
-        const bu = URL.createObjectURL(new Blob([rawBlob], { type: mime }))
-        blobUrlRef.current = bu
-        const el = audioRef.current
-        if (el) { el.src = bu; el.load() }
-      })
-      .catch(() => { if (!cancelled) setLoadErr(true) })
-
-    return () => {
-      cancelled = true
-      if (blobUrlRef.current) { URL.revokeObjectURL(blobUrlRef.current); blobUrlRef.current = '' }
-    }
-  }, [url])
+  // Infer MIME from URL extension — used as <source type> hint so the browser
+  // knows the codec even if Supabase serves it as application/octet-stream.
+  const ext  = url.split('?')[0].split('.').pop()?.toLowerCase() ?? 'webm'
+  const mime = ext === 'ogg' ? 'audio/ogg' : ext === 'mp4' ? 'audio/mp4' : 'audio/webm'
 
   function toggle() {
     const el = audioRef.current
-    if (!el || !blobUrlRef.current) return
+    if (!el) return
     if (el.paused) {
       el.volume = 1
       el.muted  = false
@@ -169,9 +146,10 @@ function VoicePlayer({ url, isMe }: { url: string; isMe: boolean }) {
 
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 min-w-[160px]">
+      {/* Media elements bypass CORS — do NOT use fetch() for audio URLs */}
       <audio
         ref={audioRef}
-        preload="none"
+        preload="auto"
         onLoadedMetadata={() => setDuration(Math.round(audioRef.current?.duration ?? 0))}
         onTimeUpdate={() => {
           const el = audioRef.current
@@ -182,7 +160,9 @@ function VoicePlayer({ url, isMe }: { url: string; isMe: boolean }) {
         onEnded={() => { setPlaying(false); setProgress(0); setElapsed(0) }}
         onPause={() => setPlaying(false)}
         onError={() => { setLoadErr(true); setPlaying(false) }}
-      />
+      >
+        <source src={url} type={mime} />
+      </audio>
 
       <button onClick={toggle} disabled={loadErr}
         className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform active:scale-90 disabled:opacity-40"
@@ -521,6 +501,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
   const mediaRecorderRef  = useRef<MediaRecorder | null>(null)
   const audioChunksRef    = useRef<Blob[]>([])
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
+  const isRecordingRef    = useRef(false)  // ref guard — reliable before state update settles
 
   // Reply + Edit + UI state
   const [replyingTo, setReplyingTo]       = useState<Message | null>(null)
@@ -665,6 +646,9 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
 
   // ── Voice recording ────────────────────────────────────────────
   async function startRecording() {
+    if (isRecordingRef.current) return  // ref is synchronous — safe before state settles
+    isRecordingRef.current = true
+    clearInterval(recordingTimerRef.current)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']
@@ -678,11 +662,13 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
       setRecordingTime(0)
       recordingTimerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000)
     } catch {
+      isRecordingRef.current = false
       alert('Microphone access denied.')
     }
   }
 
   async function stopRecording(send: boolean) {
+    isRecordingRef.current = false
     clearInterval(recordingTimerRef.current)
     const mr = mediaRecorderRef.current
     if (!mr) { setRecording(false); return }
@@ -1170,7 +1156,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
           {!input.trim() && pendingFiles.length === 0 && (
             <button
               onMouseDown={startRecording}
-              onTouchStart={startRecording}
+              onTouchStart={(e) => { e.preventDefault(); startRecording() }}
               disabled={sendingVoice}
               className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all disabled:opacity-30"
               style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.4)' }}>
