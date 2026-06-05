@@ -20,6 +20,7 @@ export async function POST(request: Request) {
       id: user.id,
       full_name: user.user_metadata?.full_name ?? '',
       category,
+      gender: user.user_metadata?.gender ?? null,
       profession,
       age: parseInt(age, 10),
       bio: bio ?? null,

@@ -16,6 +16,13 @@ const CATEGORIES = [
   { id: 'company',      label: 'Company',      emoji: '🏢' },
 ];
 
+const GENDERS = [
+  { id: 'male',              label: 'Man',              emoji: '👨' },
+  { id: 'female',            label: 'Woman',            emoji: '👩' },
+  { id: 'non_binary',        label: 'Non-binary',       emoji: '🌈' },
+  { id: 'prefer_not_to_say', label: 'Prefer not to say', emoji: '🔒' },
+];
+
 export default function SignupPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -23,6 +30,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
+  const [gender, setGender] = useState('');
   const [category, setCategory] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -38,6 +46,7 @@ export default function SignupPage() {
   };
 
   const handleSignup = async () => {
+    if (!gender) { setError('Please select your gender'); return; }
     if (!category) { setError('Please select a category'); return; }
     setError('');
     setLoading(true);
@@ -47,7 +56,7 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        data: { full_name: fullName, category },
+        data: { full_name: fullName, category, gender },
         emailRedirectTo: `${location.origin}/api/auth/callback`,
       },
     });
@@ -156,6 +165,28 @@ export default function SignupPage() {
               </>
             ) : (
               <>
+                {/* Gender */}
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-2">I am a…</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {GENDERS.map(({ id, label, emoji }) => (
+                      <button key={id} type="button" onClick={() => setGender(id)}
+                        className={clsx('relative p-3 rounded-2xl border text-left transition-all flex items-center gap-2', gender === id ? 'border-transparent shadow-gold' : 'border-white/10 hover:border-white/20 bg-white/[0.04] hover:bg-white/[0.07]')}
+                        style={gender === id ? { background: 'rgba(201,168,76,0.12)', borderColor: '#C9A84C' } : {}}>
+                        {gender === id && (
+                          <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-white flex items-center justify-center">
+                            <Check size={9} className="text-black" />
+                          </div>
+                        )}
+                        <span className="text-xl">{emoji}</span>
+                        <span className="text-sm font-semibold text-white">{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Category */}
+                <label className="block text-sm font-medium text-white/70 -mb-1">I&apos;m here as a…</label>
                 <div className="grid grid-cols-2 gap-3">
                   {CATEGORIES.map(({ id, label, emoji }) => (
                     <button key={id} type="button" onClick={() => setCategory(id)}

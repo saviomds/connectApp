@@ -18,6 +18,7 @@ interface Props {
 export default function NavbarClient({ userName, avatarUrl, unreadCount, likedYouCount }: Props) {
   const pathname = usePathname();
   const isLanding = LANDING_ROUTES.some((r) => pathname === r || pathname.startsWith('/verify') || pathname.startsWith('/onboarding'));
+  const isAdmin = pathname.startsWith('/admin');
   const showAppNav = !isLanding && !!userName;
   const initial = userName?.charAt(0)?.toUpperCase() ?? '?';
 
@@ -128,7 +129,7 @@ export default function NavbarClient({ userName, avatarUrl, unreadCount, likedYo
       </header>
 
       {/* ── Mobile bottom nav (Instagram-style) ── */}
-      {showAppNav && (
+      {showAppNav && !isAdmin && (
         <nav
           className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
           style={{

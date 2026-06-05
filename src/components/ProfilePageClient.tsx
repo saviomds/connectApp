@@ -15,6 +15,7 @@ interface DisplayUser {
   interests: string[]
   age: number
   category: string
+  sexuality: string
   linkedin_url: string
   website: string
   is_open_to_work: boolean
@@ -46,6 +47,7 @@ export default function ProfilePageClient({ displayUser }: { displayUser: Displa
             country:         displayUser.country,
             age:             displayUser.age || null,
             category:        displayUser.category,
+            sexuality:       displayUser.sexuality,
             interests:       displayUser.interests,
             linkedin_url:    displayUser.linkedin_url,
             website:         displayUser.website,

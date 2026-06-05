@@ -75,6 +75,7 @@ export default async function ProfilePage() {
     interests:      p.interests,
     age:            p.age ?? 0,
     category:       p.category ?? 'professional',
+    sexuality:      (p as unknown as { sexuality?: string }).sexuality ?? '',
     linkedin_url:   p.linkedin_url ?? '',
     website:        p.website ?? '',
     is_open_to_work: p.is_open_to_work,

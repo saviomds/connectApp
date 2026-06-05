@@ -13,6 +13,7 @@ interface ProfileData {
   country: string
   age: number | null
   category: string
+  sexuality: string
   interests: string[]
   linkedin_url: string
   website: string
@@ -21,6 +22,17 @@ interface ProfileData {
   photos: string[]
   userId: string
 }
+
+const SEXUALITY_OPTIONS = [
+  { id: 'straight',          label: 'Straight',          emoji: '💛' },
+  { id: 'gay',               label: 'Gay',               emoji: '🏳️‍🌈' },
+  { id: 'lesbian',           label: 'Lesbian',           emoji: '🏳️‍🌈' },
+  { id: 'bisexual',          label: 'Bisexual',          emoji: '💜' },
+  { id: 'pansexual',         label: 'Pansexual',         emoji: '💖' },
+  { id: 'asexual',           label: 'Asexual',           emoji: '🖤' },
+  { id: 'queer',             label: 'Queer',             emoji: '✨' },
+  { id: 'prefer_not_to_say', label: 'Prefer not to say', emoji: '🔒' },
+]
 
 const CATEGORIES = [
   { id: 'professional', label: 'Professional', emoji: '💼' },
@@ -156,6 +168,7 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
           country: data.country || null,
           age: data.age,
           category: data.category || null,
+          sexuality: data.sexuality || null,
           interests: data.interests,
           linkedin_url: data.linkedin_url || null,
           website: data.website || null,
@@ -422,6 +435,24 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
                       color: data.category === id ? '#C9A84C' : 'rgba(255,255,255,0.6)',
                     }}>
                     {emoji} {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Sexuality */}
+            <div>
+              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Sexuality</label>
+              <div className="grid grid-cols-2 gap-2">
+                {SEXUALITY_OPTIONS.map(({ id, label, emoji }) => (
+                  <button key={id} onClick={() => set('sexuality', data.sexuality === id ? '' : id)}
+                    className="p-2.5 rounded-xl text-xs font-medium border text-left transition-all flex items-center gap-2"
+                    style={{
+                      background: data.sexuality === id ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.04)',
+                      borderColor: data.sexuality === id ? '#C9A84C' : 'rgba(255,255,255,0.08)',
+                      color: data.sexuality === id ? '#C9A84C' : 'rgba(255,255,255,0.6)',
+                    }}>
+                    <span>{emoji}</span> {label}
                   </button>
                 ))}
               </div>
