@@ -10,7 +10,7 @@ import {
 import {
   MapPin, BadgeCheck, Heart, X, Star, SlidersHorizontal, RotateCcw,
   Filter, MoreHorizontal, ShieldBan, Flag, Loader2, Zap, MessageSquareQuote,
-  Crown, Info, ChevronLeft, ChevronRight, Globe, Briefcase,
+  Crown, ChevronLeft, ChevronRight, Globe, Briefcase, Info,
 } from 'lucide-react';
 import type { DbProfile } from '@/types/database';
 import SplashScreen from './SplashScreen';
@@ -178,7 +178,7 @@ function ProfileSheet({ profile, onClose, onSwipe }: {
           ) : (
             <div className="absolute inset-0 flex items-center justify-center"
               style={{ background: 'linear-gradient(135deg,#1a1a2e,#16213e)' }}>
-              <span className="font-black text-white/10" style={{ fontSize: 120 }}>{profile.full_name.charAt(0)}</span>
+              <span className="font-black text-white/10" style={{ fontSize: 120 }}>{(profile.full_name ?? '?').charAt(0)}</span>
             </div>
           )}
           <div className="absolute inset-0" style={{ background: 'linear-gradient(to top,#0F0F14 0%,transparent 55%)' }} />
@@ -534,7 +534,7 @@ function MatchModal({ profile, onClose, onMessage }: { profile: DbProfile; onClo
                 {profile.avatar_url
                   ? <Image src={profile.avatar_url} alt={profile.full_name} width={76} height={76} className="w-full h-full object-cover" />
                   : <div className="w-full h-full flex items-center justify-center text-2xl font-bold"
-                      style={{ background: 'rgba(201,168,76,0.15)', color: '#C9A84C' }}>{profile.full_name.charAt(0)}</div>
+                      style={{ background: 'rgba(201,168,76,0.15)', color: '#C9A84C' }}>{(profile.full_name ?? '?').charAt(0)}</div>
                 }
               </div>
             </div>

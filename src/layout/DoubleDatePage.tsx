@@ -49,7 +49,7 @@ function Avatar({ p, size = 48 }: { p: MatchProfile; size?: number }) {
   return (
     <div className="flex items-center justify-center rounded-full shrink-0 font-bold text-white/30"
       style={{ width: size, height: size, background: '#1A1A1F', fontSize: size * 0.35 }}>
-      {p.full_name[0]}
+      {(p.full_name?.[0] ?? '?')}
     </div>
   )
 }
@@ -204,7 +204,7 @@ function BrowseGroupsStep({
           </div>
           <div className="ml-1 min-w-0">
             <p className="text-sm font-semibold text-white truncate">
-              You &amp; {myDate.profile.full_name.split(' ')[0]}
+              You &amp; {(myDate.profile.full_name ?? '').split(' ')[0] || 'them'}
             </p>
             <p className="text-xs text-white/40">Your couple</p>
           </div>
@@ -262,11 +262,11 @@ function BrowseGroupsStep({
                       style={{ background: '#1A1A1F' }}>
                       {thumb
                         ? <Image src={thumb} alt={profile.full_name} fill className="object-cover" />
-                        : <div className="absolute inset-0 flex items-center justify-center text-3xl font-bold text-white/15">{profile.full_name[0]}</div>}
+                        : <div className="absolute inset-0 flex items-center justify-center text-3xl font-bold text-white/15">{(profile.full_name?.[0] ?? '?')}</div>}
                       <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 25%, transparent)' }} />
                       <div className="absolute bottom-2 left-2">
                         <div className="flex items-center gap-1">
-                          <span className="text-xs font-bold text-white leading-none">{profile.full_name.split(' ')[0]}</span>
+                          <span className="text-xs font-bold text-white leading-none">{(profile.full_name ?? '').split(' ')[0] || '?'}</span>
                           {profile.age && <span className="text-[10px] text-white/60">{profile.age}</span>}
                           {profile.is_verified && <BadgeCheck size={10} style={{ color: '#4A90E2' }} />}
                         </div>
@@ -291,7 +291,7 @@ function BrowseGroupsStep({
                 <div className="px-4 py-3 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-white truncate">
-                      {couple.user1.full_name.split(' ')[0]} &amp; {couple.user2.full_name.split(' ')[0]}
+                      {(couple.user1.full_name ?? '').split(' ')[0] || '?'} &amp; {(couple.user2.full_name ?? '').split(' ')[0] || '?'}
                     </p>
                     {(couple.user1.city || couple.user2.city) && (
                       <div className="flex items-center gap-1 text-xs text-white/35 mt-0.5">

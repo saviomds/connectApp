@@ -10,7 +10,8 @@ export async function PATCH(
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await request.json() as { action: 'delete' | 'view_once' | 'edit'; content?: string }
+  let body: { action: 'delete' | 'view_once' | 'edit'; content?: string }
+  try { body = await request.json() } catch { return Response.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
   // Fetch the message with conversation participant check
   const { data: msg, error: msgError } = await supabase

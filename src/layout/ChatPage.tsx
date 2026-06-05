@@ -684,7 +684,6 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
     const recMime = mediaRecorderRef.current?.mimeType || 'audio/webm'
     const ext = recMime.includes('ogg') ? 'ogg' : recMime.includes('mp4') ? 'mp4' : 'webm'
     const blob = new Blob(audioChunksRef.current, { type: recMime })
-    console.log('[voice] recorded — size:', blob.size, 'bytes, mime:', recMime, 'chunks:', audioChunksRef.current.length)
     if (blob.size < 1000) {
       alert('Recording seems empty (mic may be muted or wrong device selected). Check your browser microphone settings.')
       return
@@ -695,13 +694,11 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
       contentType: recMime,
     })
     if (error) {
-      console.error('[voice] upload failed:', error.message)
       alert(`Voice upload failed: ${error.message}`)
       setSendingVoice(false)
       return
     }
     const { data: { publicUrl } } = supabase.storage.from('message-media').getPublicUrl(path)
-    console.log('[voice] uploaded OK →', publicUrl)
     const res = await fetch(`/api/conversations/${convId}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -711,7 +708,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
       const m: Message = await res.json()
       setMessages(prev => prev.find(x => x.id === m.id) ? prev : [...prev, m])
     } else {
-      console.error('[voice] message insert failed:', res.status, await res.text())
+      alert('Failed to send voice note. Please try again.')
     }
     setSendingVoice(false)
   }
@@ -786,19 +783,23 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
       return
     }
 
+    const textToSend = input.trim()
     setSending(true); setInput('')
     const replyId = replyingTo?.id ?? null; setReplyingTo(null)
     const res = await fetch(`/api/conversations/${convId}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: input.trim(), reply_to_id: replyId }),
+      body: JSON.stringify({ content: textToSend, reply_to_id: replyId }),
     })
     if (res.status === 429) {
       const body = await res.json()
-      if (body.limitReached) { setInput(input.trim()); setMsgLimitReached(true) }
+      if (body.limitReached) { setInput(textToSend); setMsgLimitReached(true) }
     } else if (res.ok) {
       const m: Message = await res.json()
       setMessages(prev => prev.find(x => x.id === m.id) ? prev : [...prev, m])
+    } else {
+      // Restore input on unexpected failure so user doesn't lose their message
+      setInput(textToSend)
     }
     setSending(false)
   }
@@ -841,21 +842,30 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
 
   // ── Per-message actions ────────────────────────────────────────
   async function deleteMessage(msgId: string) {
+    // Snapshot for revert
+    const snapshot = messages.find(m => m.id === msgId)
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, is_deleted: true } : m))
-    await fetch(`/api/conversations/${convId}/messages/${msgId}`, {
+    const res = await fetch(`/api/conversations/${convId}/messages/${msgId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'delete' }),
     })
+    if (!res.ok && snapshot) {
+      setMessages(prev => prev.map(m => m.id === msgId ? snapshot : m))
+    }
   }
 
   async function editMessage(msgId: string, content: string) {
     const trimmed = content.trim()
     if (!trimmed) return
+    const snapshot = messages.find(m => m.id === msgId)
     setMessages(prev => prev.map(m => m.id === msgId ? { ...m, content: trimmed, edited_at: new Date().toISOString() } : m))
-    await fetch(`/api/conversations/${convId}/messages/${msgId}`, {
+    const res = await fetch(`/api/conversations/${convId}/messages/${msgId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'edit', content: trimmed }),
     })
+    if (!res.ok && snapshot) {
+      setMessages(prev => prev.map(m => m.id === msgId ? snapshot : m))
+    }
   }
 
   function startEdit(msg: Message) {

@@ -105,13 +105,8 @@ export async function POST(
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await request.json() as {
-    content?: string
-    type?: 'text' | 'image' | 'album' | 'view_once' | 'voice'
-    media_urls?: string[]
-    is_view_once?: boolean
-    reply_to_id?: string
-  }
+  let body: { content?: string; type?: 'text' | 'image' | 'album' | 'view_once' | 'voice'; media_urls?: string[]; is_view_once?: boolean; reply_to_id?: string }
+  try { body = await request.json() } catch { return Response.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const msgType = body.type ?? 'text'
   const content = body.content?.trim() ?? ''
   const mediaUrls = body.media_urls ?? []

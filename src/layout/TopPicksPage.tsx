@@ -40,7 +40,7 @@ function PickCard({ pick, index, isPremium }: { pick: Pick; index: number; isPre
         {thumb
           ? <Image src={thumb} alt={pick.full_name} fill className={`object-cover transition-all duration-500 ${locked ? 'blur-md scale-105' : 'group-hover:scale-105'}`} />
           : <div className="h-full bg-gradient-to-br from-gold/20 to-purple/20 flex items-center justify-center">
-              <span className="text-5xl font-bold text-white/20">{pick.full_name[0]}</span>
+              <span className="text-5xl font-bold text-white/20">{(pick.full_name?.[0] ?? '?')}</span>
             </div>
         }
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 40%, transparent 70%)' }} />

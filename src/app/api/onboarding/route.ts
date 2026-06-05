@@ -6,8 +6,9 @@ export async function POST(request: Request) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await request.json()
-  const { category, profession, age, bio, city, country } = body
+  let body: Record<string, unknown>
+  try { body = await request.json() } catch { return Response.json({ error: 'Invalid JSON' }, { status: 400 }) }
+  const { category, profession, age, bio, city, country } = body as Record<string, string>
 
   if (!category || !profession || !age) {
     return Response.json({ error: 'category, profession, and age are required' }, { status: 400 })

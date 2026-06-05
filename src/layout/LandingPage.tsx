@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, CheckCircle, Zap, Shield, Users, Briefcase, Heart, Star } from 'lucide-react';
+import { getCachedUser, createClient } from '@/lib/supabase/server';
 
 const FEATURES = [
   { icon: Users,     title: 'Smart Discovery',    desc: 'AI-matched profiles based on goals, values, and interests — not just looks.' },
@@ -45,7 +46,23 @@ const AVATARS = [
   'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=60&q=80',
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  // Reuses the cached user from the Navbar — no extra DB call
+  const user = await getCachedUser();
+
+  let profile: { full_name: string; avatar_url: string | null; profession: string | null } | null = null;
+  if (user) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('profiles')
+      .select('full_name, avatar_url, profession')
+      .eq('id', user.id)
+      .single();
+    profile = data;
+  }
+
+  const firstName = profile?.full_name?.split(' ')[0] ?? null;
+
   return (
     <main className="pt-nav-flush">
 
@@ -59,34 +76,82 @@ export default function LandingPage() {
         <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full blur-3xl" style={{ background: 'rgba(155,109,255,0.07)' }} />
 
         <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-          <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full text-sm font-medium mb-8 animate-fade-up" style={{ color: '#C9A84C' }}>
-            <Zap size={14} style={{ fill: '#C9A84C', color: '#C9A84C' }} />
-            The Premium Social Discovery Platform
-          </div>
-          <h1 className="text-5xl sm:text-7xl font-bold tracking-tight text-white mb-6 animate-fade-up-delay-1 leading-tight">
-            Discover Real<br />
-            <span className="text-gradient-gold">Connections</span>
-          </h1>
-          <p className="text-lg sm:text-xl text-white/60 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-up-delay-2">
-            Where professionals, creators, and entrepreneurs meet. Build your network, find your people,
-            grow your career — or simply meet someone extraordinary.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up-delay-3">
-            <Link href="/signup" className="btn-gold px-8 py-4 rounded-2xl font-semibold text-black text-base flex items-center gap-2 shadow-gold">
-              Get Started Free <ArrowRight size={18} />
-            </Link>
-            <Link href="/discover" className="glass px-8 py-4 rounded-2xl font-semibold text-white text-base hover:bg-white/10 transition-colors flex items-center gap-2">
-              Enter App <ArrowRight size={16} className="opacity-60" />
-            </Link>
-          </div>
-          <div className="flex items-center justify-center gap-4 mt-12 animate-fade-up-delay-4">
-            <div className="flex -space-x-2">
-              {AVATARS.map((src, i) => (
-                <Image key={i} src={src} alt="" width={32} height={32} className="w-8 h-8 rounded-full border-2 border-[#0A0A0B] object-cover" />
-              ))}
-            </div>
-            <p className="text-sm text-white/50"><span className="text-white font-semibold">50,000+</span> professionals already connected</p>
-          </div>
+
+          {user && profile ? (
+            /* ── Logged-in hero ── */
+            <>
+              {/* Welcome card */}
+              <div className="inline-flex items-center gap-3 glass px-5 py-3 rounded-2xl mb-8 animate-fade-up"
+                style={{ border: '1px solid rgba(201,168,76,0.20)' }}>
+                {profile.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profile.avatar_url} alt={profile.full_name} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-black shrink-0"
+                    style={{ background: '#C9A84C' }}>
+                    {(profile.full_name ?? '?').charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="text-left">
+                  <p className="text-xs text-white/40 leading-none mb-0.5">Welcome back</p>
+                  <p className="text-sm font-semibold text-white leading-none">
+                    {profile.full_name}
+                    {profile.profession && (
+                      <span className="text-white/40 font-normal"> · {profile.profession}</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <h1 className="text-5xl sm:text-7xl font-bold tracking-tight text-white mb-6 animate-fade-up-delay-1 leading-tight">
+                Good to see you,<br />
+                <span className="text-gradient-gold">{firstName}.</span>
+              </h1>
+              <p className="text-lg sm:text-xl text-white/60 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-up-delay-2">
+                Your next connection is waiting. Jump back into Discover and see who's new today.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up-delay-3">
+                <Link href="/discover" className="btn-gold px-8 py-4 rounded-2xl font-semibold text-black text-base flex items-center gap-2 shadow-gold">
+                  Continue Discovering <ArrowRight size={18} />
+                </Link>
+                <Link href="/profile" className="glass px-8 py-4 rounded-2xl font-semibold text-white text-base hover:bg-white/10 transition-colors flex items-center gap-2">
+                  View Profile <ArrowRight size={16} className="opacity-60" />
+                </Link>
+              </div>
+            </>
+          ) : (
+            /* ── Guest hero ── */
+            <>
+              <div className="inline-flex items-center gap-2 glass px-4 py-2 rounded-full text-sm font-medium mb-8 animate-fade-up" style={{ color: '#C9A84C' }}>
+                <Zap size={14} style={{ fill: '#C9A84C', color: '#C9A84C' }} />
+                The Premium Social Discovery Platform
+              </div>
+              <h1 className="text-5xl sm:text-7xl font-bold tracking-tight text-white mb-6 animate-fade-up-delay-1 leading-tight">
+                Discover Real<br />
+                <span className="text-gradient-gold">Connections</span>
+              </h1>
+              <p className="text-lg sm:text-xl text-white/60 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-up-delay-2">
+                Where professionals, creators, and entrepreneurs meet. Build your network, find your people,
+                grow your career — or simply meet someone extraordinary.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up-delay-3">
+                <Link href="/signup" className="btn-gold px-8 py-4 rounded-2xl font-semibold text-black text-base flex items-center gap-2 shadow-gold">
+                  Get Started Free <ArrowRight size={18} />
+                </Link>
+                <Link href="/discover" className="glass px-8 py-4 rounded-2xl font-semibold text-white text-base hover:bg-white/10 transition-colors flex items-center gap-2">
+                  Enter App <ArrowRight size={16} className="opacity-60" />
+                </Link>
+              </div>
+              <div className="flex items-center justify-center gap-4 mt-12 animate-fade-up-delay-4">
+                <div className="flex -space-x-2">
+                  {AVATARS.map((src, i) => (
+                    <Image key={i} src={src} alt="" width={32} height={32} className="w-8 h-8 rounded-full border-2 border-[#0A0A0B] object-cover" />
+                  ))}
+                </div>
+                <p className="text-sm text-white/50"><span className="text-white font-semibold">50,000+</span> professionals already connected</p>
+              </div>
+            </>
+          )}
         </div>
       </section>
 
@@ -163,24 +228,41 @@ export default function LandingPage() {
           <div className="glass rounded-3xl p-6 sm:p-12 relative overflow-hidden" style={{ border: '1px solid rgba(201,168,76,0.15)' }}>
             <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(135deg, rgba(201,168,76,0.05), transparent)' }} />
             <div className="relative z-10">
-              <h2 className="text-4xl font-bold text-white mb-4">Ready to connect?</h2>
-              <p className="text-white/50 text-lg mb-8">Join 50,000+ people who found their network, their next hire, or their person.</p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link href="/signup" className="btn-gold px-8 py-4 rounded-2xl font-bold text-black text-base shadow-gold flex items-center gap-2">
-                  Create Free Account <ArrowRight size={18} />
-                </Link>
-                <Link href="/premium" className="glass px-8 py-4 rounded-2xl font-semibold text-base hover:bg-white/10 transition-colors" style={{ color: '#C9A84C', border: '1px solid rgba(201,168,76,0.2)' }}>
-                  View Premium Plans
-                </Link>
-              </div>
-              <div className="flex flex-wrap items-center justify-center gap-6 mt-8 text-sm text-white/40">
-                {['No credit card required', 'Free forever plan', 'Cancel anytime'].map((t) => (
-                  <div key={t} className="flex items-center gap-1.5">
-                    <CheckCircle size={13} className="text-emerald-400" />
-                    {t}
+              {user ? (
+                <>
+                  <h2 className="text-4xl font-bold text-white mb-4">Keep the momentum going.</h2>
+                  <p className="text-white/50 text-lg mb-8">New profiles are waiting in Discover. Your next great connection could be one swipe away.</p>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <Link href="/discover" className="btn-gold px-8 py-4 rounded-2xl font-bold text-black text-base shadow-gold flex items-center gap-2">
+                      Open Discover <ArrowRight size={18} />
+                    </Link>
+                    <Link href="/matches" className="glass px-8 py-4 rounded-2xl font-semibold text-base hover:bg-white/10 transition-colors" style={{ color: '#C9A84C', border: '1px solid rgba(201,168,76,0.2)' }}>
+                      View Matches
+                    </Link>
                   </div>
-                ))}
-              </div>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-4xl font-bold text-white mb-4">Ready to connect?</h2>
+                  <p className="text-white/50 text-lg mb-8">Join 50,000+ people who found their network, their next hire, or their person.</p>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <Link href="/signup" className="btn-gold px-8 py-4 rounded-2xl font-bold text-black text-base shadow-gold flex items-center gap-2">
+                      Create Free Account <ArrowRight size={18} />
+                    </Link>
+                    <Link href="/premium" className="glass px-8 py-4 rounded-2xl font-semibold text-base hover:bg-white/10 transition-colors" style={{ color: '#C9A84C', border: '1px solid rgba(201,168,76,0.2)' }}>
+                      View Premium Plans
+                    </Link>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-6 mt-8 text-sm text-white/40">
+                    {['No credit card required', 'Free forever plan', 'Cancel anytime'].map((t) => (
+                      <div key={t} className="flex items-center gap-1.5">
+                        <CheckCircle size={13} className="text-emerald-400" />
+                        {t}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

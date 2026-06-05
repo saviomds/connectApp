@@ -310,7 +310,7 @@ function ExtendModal({ matchName, onClose }: { matchName: string; onClose: () =>
 
 // ─── Story circle ─────────────────────────────────────────────
 function StoryCircle({ item, onClick, canSee }: { item: LikedYouItem; onClick: () => void; canSee: boolean }) {
-  const firstName = canSee ? item.profile.full_name.split(' ')[0].slice(0, 9) : '• • •'
+  const firstName = canSee ? (item.profile.full_name ?? '').split(' ')[0].slice(0, 9) || '?' : '• • •'
   const isSuperLike = item.direction === 'super_like'
 
   return (
@@ -325,7 +325,7 @@ function StoryCircle({ item, onClick, canSee }: { item: LikedYouItem; onClick: (
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-xl font-bold"
               style={{ color: canSee ? 'rgba(255,255,255,0.4)' : 'transparent', filter: canSee ? 'none' : 'blur(6px)' }}>
-              {item.profile.full_name[0].toUpperCase()}
+              {(item.profile.full_name?.[0] ?? '?').toUpperCase()}
             </div>
           )}
           {!canSee && (
@@ -412,7 +412,7 @@ function StoryPreviewModal({ item, onClose, onLikedBack, canSee }: {
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-7xl font-bold text-white/10"
               style={{ background: 'rgba(255,255,255,0.03)', filter: canSee ? 'none' : 'blur(12px)' }}>
-              {p.full_name[0].toUpperCase()}
+              {(p.full_name?.[0] ?? '?').toUpperCase()}
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-[rgba(15,15,20,0.98)] via-[rgba(15,15,20,0.15)] to-transparent" />
@@ -443,7 +443,7 @@ function StoryPreviewModal({ item, onClose, onLikedBack, canSee }: {
               <motion.div className="text-center" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
                 <div className="text-5xl mb-2">🎉</div>
                 <div className="text-2xl font-bold text-white">It&apos;s a Match!</div>
-                <div className="text-white/50 text-sm mt-1">You and {p.full_name.split(' ')[0]} liked each other</div>
+                <div className="text-white/50 text-sm mt-1">You and {(p.full_name ?? '').split(' ')[0] || 'them'} liked each other</div>
               </motion.div>
             ) : (
               <>
@@ -584,7 +584,7 @@ function MatchCard({ match, onRemove, onExtend }: {
               sizes="(max-width:768px) 100vw,(max-width:1200px) 50vw,33vw" />
           ) : (
             <div className="absolute inset-0 bg-white/5 flex items-center justify-center text-5xl font-bold text-white/10 uppercase">
-              {p.full_name[0]}
+              {(p.full_name?.[0] ?? '?')}
             </div>
           )}
           <div className="absolute inset-0" style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.92) 0%,rgba(0,0,0,0.1) 55%,transparent 100%)' }} />

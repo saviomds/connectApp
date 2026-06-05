@@ -10,7 +10,9 @@ export async function POST(request: Request) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { target_id, direction } = await request.json()
+  let body: { target_id?: string; direction?: string }
+  try { body = await request.json() } catch { return Response.json({ error: 'Invalid JSON' }, { status: 400 }) }
+  const { target_id, direction } = body
   if (!target_id || !direction)
     return Response.json({ error: 'target_id and direction are required' }, { status: 400 })
   if (!['like', 'pass', 'super_like'].includes(direction))

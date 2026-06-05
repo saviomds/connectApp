@@ -6,7 +6,9 @@ export async function PUT(request: Request) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { password } = await request.json()
+  let body: { password?: string }
+  try { body = await request.json() } catch { return Response.json({ error: 'Invalid JSON' }, { status: 400 }) }
+  const { password } = body
 
   if (!password || password.length < 6) {
     return Response.json({ error: 'Password must be at least 6 characters' }, { status: 400 })

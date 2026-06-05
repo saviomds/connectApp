@@ -12,7 +12,8 @@ export async function POST(
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await request.json() as { emoji?: string }
+  let body: { emoji?: string }
+  try { body = await request.json() } catch { return Response.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const emoji = body.emoji?.trim()
   if (!emoji || !ALLOWED_EMOJIS.has(emoji)) {
     return Response.json({ error: 'Invalid emoji' }, { status: 400 })

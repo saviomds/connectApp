@@ -133,7 +133,7 @@ function ComposeSheet({ onClose, existingConvIds, conversations, currentUserId }
           ) : (
             <div className="w-11 h-11 rounded-full flex items-center justify-center font-bold text-base"
               style={{ background: 'rgba(201,168,76,0.15)', color: '#C9A84C' }}>
-              {m.profile.full_name.charAt(0)}
+              {(m.profile.full_name ?? '?').charAt(0)}
             </div>
           )}
           <TierRing tier={m.profile.premium_tier ?? null} />
@@ -422,7 +422,7 @@ export default function MessagesClient({ currentUserId, initialConversations }: 
                     ) : (
                       <div className="w-[52px] h-[52px] rounded-full flex items-center justify-center text-lg font-bold"
                         style={{ background: 'rgba(201,168,76,0.15)', color: '#C9A84C' }}>
-                        {p.full_name.charAt(0)}
+                        {(p.full_name ?? '?').charAt(0)}
                       </div>
                     )}
                     <TierRing tier={p.premium_tier} />

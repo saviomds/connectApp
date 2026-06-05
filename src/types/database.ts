@@ -3,6 +3,8 @@ export type PremiumTier = 'gold' | 'platinum'
 export type SwipeDirection = 'like' | 'pass' | 'super_like'
 export type NotificationType = 'match' | 'message' | 'super_like' | 'profile_boost' | 'premium'
 export type VerificationStatus = 'none' | 'pending' | 'approved' | 'rejected'
+export type Gender = 'male' | 'female' | 'non_binary' | 'prefer_not_to_say'
+export type Sexuality = 'straight' | 'gay' | 'lesbian' | 'bisexual' | 'pansexual' | 'asexual' | 'queer' | 'prefer_not_to_say'
 
 /** Categories that require professional access + ID verification */
 export const GATED_CATEGORIES: UserCategory[] = ['professional', 'divorced']
@@ -22,6 +24,8 @@ export interface DbProfile {
   country: string | null
   age: number | null
   category: UserCategory | null
+  gender: Gender | null
+  sexuality: Sexuality | null
   interests: string[]
   avatar_url: string | null
   photos: string[]
@@ -38,6 +42,7 @@ export interface DbProfile {
   onboarding_completed: boolean
   profile_completion: number
   boosted_until: string | null
+  is_admin: boolean
   prompts: IcebreakerPrompt[]
   created_at: string
   updated_at: string

@@ -51,7 +51,7 @@ export default function LikesYouStories() {
               </div>
             </div>
             <span className="text-xs font-medium text-gray-700 max-w-[70px] truncate text-center">
-              {profile.full_name.split(' ')[0]}
+              {(profile.full_name ?? '').split(' ')[0] || '?'}
             </span>
           </Link>
         ))}

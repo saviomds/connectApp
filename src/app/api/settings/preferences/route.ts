@@ -47,7 +47,8 @@ export async function PATCH(request: Request) {
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await request.json() as Record<string, unknown>
+  let body: Record<string, unknown>
+  try { body = await request.json() } catch { return Response.json({ error: 'Invalid JSON' }, { status: 400 }) }
   const fullUpdate: Record<string, unknown> = {}
 
   for (const key of [...CORE_COLS, ...EXT_COLS]) {

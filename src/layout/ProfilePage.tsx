@@ -75,7 +75,7 @@ export default async function ProfilePage() {
     interests:      p.interests,
     age:            p.age ?? 0,
     category:       p.category ?? 'professional',
-    sexuality:      (p as unknown as { sexuality?: string }).sexuality ?? '',
+    sexuality:      p.sexuality ?? '',
     linkedin_url:   p.linkedin_url ?? '',
     website:        p.website ?? '',
     is_open_to_work: p.is_open_to_work,
@@ -135,7 +135,7 @@ export default async function ProfilePage() {
                         : 'rgba(201,168,76,0.15)',
                       color: p.premium_tier === 'platinum' ? '#9B6DFF' : '#C9A84C',
                     }}>
-                    {p.full_name.charAt(0).toUpperCase()}
+                    {(p.full_name ?? '?').charAt(0).toUpperCase()}
                   </div>
                 )}
               </div>
@@ -415,7 +415,7 @@ export default async function ProfilePage() {
                 <span className="text-sm text-white/70 flex-1">Settings</span>
                 <ChevronRight size={14} className="text-white/20" />
               </Link>
-              <ShareProfileButton />
+              <ShareProfileButton name={p.full_name} profession={p.profession ?? undefined} />
               <Link href="/api/auth/logout"
                 className="flex items-center gap-3 px-4 py-3.5 hover:bg-red-500/[0.07] transition-colors group">
                 <LogOut size={15} className="text-white/30 group-hover:text-red-400 shrink-0 transition-colors" />

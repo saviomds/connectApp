@@ -48,7 +48,7 @@ function ProfileSheet({ profile, onClose }: ProfileCardProps) {
           {thumb
             ? <Image src={thumb} alt={profile.full_name} fill className="object-cover" />
             : <div className="h-full flex items-center justify-center" style={{ background: '#1A1A1F' }}>
-                <span className="text-6xl font-bold text-white/20">{profile.full_name[0]}</span>
+                <span className="text-6xl font-bold text-white/20">{(profile.full_name?.[0] ?? '?')}</span>
               </div>}
           <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 30%, transparent)' }} />
           <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 rounded-full glass flex items-center justify-center">
@@ -215,7 +215,7 @@ export default function ExplorePage() {
                   {thumb
                     ? <Image src={thumb} alt={profile.full_name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                     : <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-3xl font-bold text-white/20">{profile.full_name[0]}</span>
+                        <span className="text-3xl font-bold text-white/20">{(profile.full_name?.[0] ?? '?')}</span>
                       </div>
                   }
                   {/* Gradient overlay */}
