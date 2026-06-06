@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: '/',
     name: 'Vibro',
     short_name: 'Vibro',
     description: 'Premium social discovery and professional networking platform.',
@@ -35,6 +36,24 @@ export default function manifest(): MetadataRoute.Manifest {
         sizes: '512x512',
         type: 'image/png',
         purpose: 'maskable',
+      },
+    ],
+    screenshots: [
+      {
+        src: '/screenshots/screen1.png',
+        sizes: '1080x1920',
+        type: 'image/png',
+        // @ts-expect-error — 'form_factor' is valid in the spec but not yet in TS types
+        form_factor: 'narrow',
+        label: 'Discover people on Vibro',
+      },
+      {
+        src: '/screenshots/screen2.png',
+        sizes: '1080x1920',
+        type: 'image/png',
+        // @ts-expect-error — 'form_factor' is valid in the spec but not yet in TS types
+        form_factor: 'narrow',
+        label: 'Match and connect',
       },
     ],
   }

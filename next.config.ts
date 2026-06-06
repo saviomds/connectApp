@@ -1,6 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async headers() {
+    return [
+      {
+        source: '/.well-known/assetlinks.json',
+        headers: [{ key: 'Content-Type', value: 'application/json' }],
+      },
+    ]
+  },
   experimental: {
     // Tell bundler to only compile what's actually imported from these large packages
     // (lucide-react has 1000+ icons; framer-motion is huge — without this hint

@@ -2,7 +2,40 @@
 const CACHE = 'vibro-v1'
 
 self.addEventListener('install', () => self.skipWaiting())
-self.addEventListener('activate', e => e.waitUntil(self.clients.claim()))
+self.addEventListener('activate', e => e.waitUntil(
+  caches.keys()
+    .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    .then(() => self.clients.claim())
+))
+
+/* ── Network-first fetch with cache fallback ────────────────── */
+self.addEventListener('fetch', event => {
+  // Only handle GET requests for same-origin navigation and static assets
+  const { request } = event
+  if (request.method !== 'GET') return
+  const url = new URL(request.url)
+  if (url.origin !== self.location.origin) return
+
+  // API routes and auth — always network, never cache
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/auth/')) return
+
+  event.respondWith(
+    fetch(request)
+      .then(response => {
+        // Cache successful responses for static assets
+        if (response.ok && (
+          url.pathname.startsWith('/_next/static/') ||
+          url.pathname.startsWith('/icons/') ||
+          url.pathname.startsWith('/screenshots/')
+        )) {
+          const clone = response.clone()
+          caches.open(CACHE).then(cache => cache.put(request, clone))
+        }
+        return response
+      })
+      .catch(() => caches.match(request))
+  )
+})
 
 /* ── Push notification handler ─────────────────────────────── */
 self.addEventListener('push', event => {

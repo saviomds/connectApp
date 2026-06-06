@@ -148,9 +148,16 @@ export default async function DiscoverPage() {
 
   const { data: profiles } = await profilesQuery
 
+  // Shuffle so each page refresh shows a different profile first
+  const shuffledProfiles = [...(profiles ?? [])]
+  for (let i = shuffledProfiles.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffledProfiles[i], shuffledProfiles[j]] = [shuffledProfiles[j], shuffledProfiles[i]]
+  }
+
   return (
     <DiscoverSwipe
-      initialProfiles={(profiles ?? []) as DbProfile[]}
+      initialProfiles={shuffledProfiles as DbProfile[]}
       currentUserId={user.id}
     />
   )

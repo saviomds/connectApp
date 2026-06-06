@@ -40,7 +40,14 @@ export async function createClient() {
  * exactly ONE network call to Supabase per request instead of 3+.
  */
 export const getCachedUser = cache(async () => {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
+  try {
+    const supabase = await createClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
+    if (error) return null
+    return user
+  } catch {
+    // Stale/revoked refresh token — middleware will clear cookies on the response.
+    // Return null so the layout renders as logged-out for this request.
+    return null
+  }
 })

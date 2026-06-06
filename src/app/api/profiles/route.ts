@@ -62,24 +62,26 @@ export async function GET(request: Request) {
 
   const profiles = data ?? []
 
-  // Sort priority:
-  // 1. Boosted profiles (paid, time-limited boost)
-  // 2. Premium/verified profiles (Gold or Platinum members)
-  // 3. Verified-only profiles
-  // 4. Everyone else
-  profiles.sort((a, b) => {
-    const aBoost    = a.boosted_until && new Date(a.boosted_until) > new Date(now)
-    const bBoost    = b.boosted_until && new Date(b.boosted_until) > new Date(now)
-    const aPremium  = a.is_premium === true
-    const bPremium  = b.is_premium === true
-    const aVerified = a.is_verified === true
-    const bVerified = b.is_verified === true
+  const scoreOf = (p: typeof profiles[number]) => {
+    const boosted = p.boosted_until && new Date(p.boosted_until) > new Date(now)
+    return (boosted ? 8 : 0) + (p.is_premium === true ? 4 : 0) + (p.is_verified === true ? 2 : 0)
+  }
 
-    const score = (boost: boolean, premium: boolean, verified: boolean) =>
-      (boost ? 8 : 0) + (premium ? 4 : 0) + (verified ? 2 : 0)
+  // Sort priority: boosted > premium > verified > everyone else
+  profiles.sort((a, b) => scoreOf(b) - scoreOf(a))
 
-    return score(bBoost, bPremium, bVerified) - score(aBoost, aPremium, aVerified)
-  })
+  // Shuffle within each same-priority tier so refreshes show different profiles first
+  let start = 0
+  while (start < profiles.length) {
+    const tierScore = scoreOf(profiles[start])
+    let end = start + 1
+    while (end < profiles.length && scoreOf(profiles[end]) === tierScore) end++
+    for (let i = end - 1; i > start; i--) {
+      const j = start + Math.floor(Math.random() * (i - start + 1))
+      ;[profiles[i], profiles[j]] = [profiles[j], profiles[i]]
+    }
+    start = end
+  }
 
   return Response.json(profiles)
 }
