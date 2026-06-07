@@ -1,12 +1,6 @@
 import webpush from 'web-push'
 import { adminSupabase } from './supabase/admin'
 
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL!,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-)
-
 interface PushPayload {
   title: string
   body: string
@@ -19,6 +13,13 @@ interface PushPayload {
  * Silently removes subscriptions that have expired (HTTP 410).
  */
 export async function sendPushToUser(userId: string, payload: PushPayload) {
+  const email      = process.env.VAPID_EMAIL
+  const publicKey  = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  const privateKey = process.env.VAPID_PRIVATE_KEY
+  if (!email || !publicKey || !privateKey) return
+
+  webpush.setVapidDetails(email, publicKey, privateKey)
+
   const { data: subs } = await adminSupabase
     .from('push_subscriptions')
     .select('endpoint, p256dh, auth_key')
