@@ -11,6 +11,7 @@ import {
   Play, Pause, SmilePlus, Pencil,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { playMessageSound } from '@/lib/message-sound'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 type MsgType = 'text' | 'image' | 'album' | 'view_once' | 'voice'
@@ -593,6 +594,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
           const m = payload.new as Message
           setMessages(prev => prev.find(x => x.id === m.id) ? prev : [...prev, m])
           if (m.sender_id !== currentUserId) {
+            playMessageSound()
             supabase.from('messages').update({ is_seen: true }).eq('id', m.id).then(() => {})
           }
         }

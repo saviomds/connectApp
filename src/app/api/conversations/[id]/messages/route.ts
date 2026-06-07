@@ -1,10 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
+import { sendPushToUser } from '@/lib/send-push'
 
 const FREE_DAILY_MSG_LIMIT = 20
 
 interface ConvWithMatch {
   id: string
-  match: { user1_id: string; user2_id: string }
+  match: { user1_id: string; user2_id: string } | null
 }
 
 async function resolveConversation(supabase: Awaited<ReturnType<typeof createClient>>, id: string) {
@@ -171,6 +172,28 @@ export async function POST(
     .single()
 
   if (error) return Response.json({ error: error.message }, { status: 500 })
+
+  // Fire push notification to recipient (fire-and-forget, never block the response)
+  const pc2 = postConv as unknown as ConvWithMatch
+  if (pc2.match) {
+    const recipientId = pc2.match.user1_id === user.id ? pc2.match.user2_id : pc2.match.user1_id
+    const preview = msgType === 'text' && content
+      ? (content.length > 60 ? content.slice(0, 60) + '…' : content)
+      : msgType === 'voice' ? '🎤 Voice note'
+      : msgType === 'image' || msgType === 'album' ? '📷 Photo'
+      : 'New message'
+
+    ;(async () => {
+      try {
+        const { data: sender } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
+        await sendPushToUser(recipientId, {
+          title: sender?.full_name ?? 'Someone',
+          body:  preview,
+          url:   `/messages/${postConvId}`,
+        })
+      } catch { /* non-critical */ }
+    })()
+  }
 
   return Response.json(data, { status: 201 })
 }

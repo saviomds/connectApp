@@ -39,7 +39,7 @@ self.addEventListener('fetch', event => {
 
 /* ── Push notification handler ─────────────────────────────── */
 self.addEventListener('push', event => {
-  let payload = { title: 'Vibro', body: 'You have a new notification', icon: '/icon.svg', url: '/' }
+  let payload = { title: 'Vibro', body: 'You have a new notification', icon: '/icons/icon-192.png', url: '/' }
   try {
     if (event.data) payload = { ...payload, ...event.data.json() }
   } catch (_) {}
@@ -47,10 +47,12 @@ self.addEventListener('push', event => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body:    payload.body,
-      icon:    payload.icon || '/icon.svg',
-      badge:   '/icon.svg',
+      icon:    payload.icon || '/icons/icon-192.png',
+      badge:   '/icons/icon-192.png',
       data:    { url: payload.url || '/' },
-      vibrate: [100, 50, 100],
+      vibrate: [120, 60, 120],
+      tag:     payload.url || 'vibro-notif',  // groups notifications per conversation
+      renotify: true,
     })
   )
 })
