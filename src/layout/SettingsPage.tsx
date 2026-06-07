@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import {
   ArrowLeft, Lock, Bell, Shield, Trash2, LogOut,
   ChevronRight, Eye, EyeOff, CheckCircle, ShieldCheck, Loader2,
@@ -119,12 +120,13 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
     if (newPass !== confirmPass) { setPassError('Passwords do not match'); return; }
     if (newPass.length < 6) { setPassError('Minimum 6 characters'); return; }
     setPassSaving(true);
-    const res = await fetch('/api/settings/password', {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: newPass }),
-    });
+    // Use the browser client so the session stays in sync after the update.
+    // A server-side updateUser would set new cookies but leave the in-memory
+    // session stale, triggering a SIGNED_OUT event on the client.
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({ password: newPass });
     setPassSaving(false);
-    if (!res.ok) { const { error } = await res.json(); setPassError(error ?? 'Failed'); return; }
+    if (error) { setPassError(error.message ?? 'Failed'); return; }
     setPassSuccess(true); setNewPass(''); setConfirmPass('');
     setTimeout(() => setPassSuccess(false), 3000);
   };

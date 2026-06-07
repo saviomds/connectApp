@@ -14,22 +14,14 @@ function redirectWithCookies(url: URL, supabaseResponse: NextResponse): NextResp
   return redirect
 }
 
-// Error codes that mean the stored session is definitively invalid (not transient).
-// refresh_token_not_found  → token revoked / project reset / never existed
-// bad_jwt                  → JWT secret changed or token tampered with
+// Error codes that mean the stored session is definitively invalid.
+// Everything NOT in this set is treated as transient/unknown → let through.
 const INVALID_SESSION_CODES = new Set([
-  'refresh_token_not_found',
-  'bad_jwt',
-])
-
-// refresh_token_already_used happens when two tabs both try to refresh the
-// access token at the same instant (race with rotation enabled).  One tab
-// wins and gets a new token pair; the other gets this error but the refreshed
-// cookies from the winning tab are already in the browser.  We should NOT
-// sign out — the session is still valid in the browser; the next request will
-// carry the updated cookies and succeed.
-const RACE_CONDITION_CODES = new Set([
-  'refresh_token_already_used',
+  'refresh_token_not_found',   // token revoked / project reset / never existed
+  'bad_jwt',                   // JWT secret changed or token tampered with
+  'session_not_found',         // session deleted from DB
+  'user_not_found',            // account deleted
+  'user_banned',               // account banned
 ])
 
 export async function middleware(request: NextRequest) {
@@ -70,18 +62,15 @@ export async function middleware(request: NextRequest) {
     if (error) {
       if (INVALID_SESSION_CODES.has(error.code ?? '')) {
         // Definitively invalid token — clear local cookies so the stale
-        // session doesn't loop.  scope:'local' only clears browser cookies,
-        // no extra network call needed.
+        // session doesn't loop.
         await supabase.auth.signOut({ scope: 'local' })
         // user stays null → protected routes redirect to /login below
-      } else if (RACE_CONDITION_CODES.has(error.code ?? '')) {
-        // Race condition — the valid session is already in the browser from
-        // the other tab.  Don't sign out.  Let the request through; the next
-        // navigation will carry the fresh cookies.
+      } else {
+        // Any other error (transient network blip, race condition, unknown
+        // Supabase error) — DO NOT sign the user out.  Let the request
+        // through; the page and API routes validate auth independently.
         return supabaseResponse
       }
-      // Any other auth error (e.g. 500 from Supabase) — let through.
-      // Page-level auth guards handle it without kicking the user out.
     } else {
       user = data.user
     }
