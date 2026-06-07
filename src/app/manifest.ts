@@ -43,7 +43,6 @@ export default function manifest(): MetadataRoute.Manifest {
         src: '/screenshots/screen1.png',
         sizes: '1080x1920',
         type: 'image/png',
-        // @ts-expect-error — 'form_factor' is valid in the spec but not yet in TS types
         form_factor: 'narrow',
         label: 'Discover people on Vibro',
       },
@@ -51,7 +50,6 @@ export default function manifest(): MetadataRoute.Manifest {
         src: '/screenshots/screen2.png',
         sizes: '1080x1920',
         type: 'image/png',
-        // @ts-expect-error — 'form_factor' is valid in the spec but not yet in TS types
         form_factor: 'narrow',
         label: 'Match and connect',
       },
