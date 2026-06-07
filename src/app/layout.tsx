@@ -7,6 +7,7 @@ import { getCachedUser } from '@/lib/supabase/server'
 import PresenceTracker from '@/components/PresenceTracker'
 import TierUpgradeTracker from '@/components/TierUpgradeTracker'
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar'
+import PushPrompt from '@/components/PushPrompt'
 import SessionGuard from '@/components/SessionGuard'
 import ThemeScript from '@/components/ThemeScript'
 
@@ -70,6 +71,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {user && <PresenceTracker />}
         {user && <TierUpgradeTracker userId={user.id} />}
         <ServiceWorkerRegistrar />
+        {user && <PushPrompt />}
         {children}
       </body>
     </html>
