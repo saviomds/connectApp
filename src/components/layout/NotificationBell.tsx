@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, Heart, MessageCircle, Star, Crown, Zap, X, CheckCheck } from 'lucide-react'
+import { Bell, Heart, MessageCircle, Star, Crown, Zap, X, CheckCheck, Trash2, BellRing } from 'lucide-react'
+import { requestAndSubscribePush } from '@/components/ServiceWorkerRegistrar'
 import { createClient } from '@/lib/supabase/client'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
@@ -53,6 +54,10 @@ export default function NotificationBell() {
   const [notifs, setNotifs]       = useState<Notif[]>([])
   const [newCount, setNewCount]   = useState(0)
   const [markingRead, setMarkingRead] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [clearingAll, setClearingAll] = useState(false)
+  const [pushPermission, setPushPermission] = useState<NotificationPermission | null>(null)
+  const [enablingPush, setEnablingPush] = useState(false)
   const channelRef                = useRef<RealtimeChannel | null>(null)
   const panelRef                  = useRef<HTMLDivElement>(null)
 
@@ -96,6 +101,13 @@ export default function NotificationBell() {
     setNotifs(enriched)
     setNewCount(enriched.filter(n => !n.is_read).length)
   }, [supabase])
+
+  // Check push permission state whenever the panel opens
+  useEffect(() => {
+    if (open && 'Notification' in window) {
+      setPushPermission(Notification.permission)
+    }
+  }, [open])
 
   useEffect(() => {
     load()
@@ -156,7 +168,6 @@ export default function NotificationBell() {
   async function handleNotifClick(n: Notif) {
     setOpen(false)
 
-    // Mark single as read
     if (!n.is_read) {
       setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, is_read: true } : x))
       setNewCount(c => Math.max(0, c - 1))
@@ -165,6 +176,33 @@ export default function NotificationBell() {
 
     const meta = TYPE_META[n.type]
     if (meta) router.push(meta.path(n.data))
+  }
+
+  async function deleteOne(e: React.MouseEvent, id: string) {
+    e.stopPropagation()
+    setDeletingId(id)
+    await fetch(`/api/notifications?id=${id}`, { method: 'DELETE' })
+    setNotifs(prev => {
+      const next = prev.filter(n => n.id !== id)
+      setNewCount(next.filter(n => !n.is_read).length)
+      return next
+    })
+    setDeletingId(null)
+  }
+
+  async function clearAll() {
+    setClearingAll(true)
+    await fetch('/api/notifications', { method: 'DELETE' })
+    setNotifs([])
+    setNewCount(0)
+    setClearingAll(false)
+  }
+
+  async function enablePush() {
+    setEnablingPush(true)
+    const result = await requestAndSubscribePush()
+    setPushPermission(result === 'granted' ? 'granted' : result === 'denied' ? 'denied' : pushPermission)
+    setEnablingPush(false)
   }
 
   return (
@@ -200,6 +238,14 @@ export default function NotificationBell() {
                   <CheckCheck size={12} /> Mark all read
                 </button>
               )}
+              {notifs.length > 0 && (
+                <button
+                  onClick={clearAll}
+                  disabled={clearingAll}
+                  className="flex items-center gap-1 text-[11px] font-medium text-white/50 hover:text-red-400 transition-colors disabled:opacity-40">
+                  <Trash2 size={12} /> Clear all
+                </button>
+              )}
               <button
                 onClick={() => setOpen(false)}
                 className="w-6 h-6 rounded-lg flex items-center justify-center text-white/40 hover:text-white transition-colors"
@@ -208,6 +254,24 @@ export default function NotificationBell() {
               </button>
             </div>
           </div>
+
+          {/* Push notification prompt */}
+          {pushPermission !== null && pushPermission !== 'granted' && pushPermission !== 'denied' && (
+            <div className="mx-3 mb-2 mt-1 flex items-center gap-2.5 rounded-xl px-3 py-2.5"
+              style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.18)' }}>
+              <BellRing size={14} style={{ color: '#C9A84C', flexShrink: 0 }} />
+              <p className="text-[11px] text-white/60 flex-1 leading-tight">
+                Enable push notifications to get alerts on your phone
+              </p>
+              <button
+                onClick={enablePush}
+                disabled={enablingPush}
+                className="text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors disabled:opacity-40"
+                style={{ background: '#C9A84C', color: '#0A0A0B' }}>
+                {enablingPush ? '…' : 'Enable'}
+              </button>
+            </div>
+          )}
 
           {/* List */}
           <div className="max-h-[400px] overflow-y-auto">
@@ -223,14 +287,20 @@ export default function NotificationBell() {
               const meta = TYPE_META[n.type] ?? TYPE_META.match
               const Icon = meta.icon
               return (
-                <button
+                <div
                   key={n.id}
-                  onClick={() => handleNotifClick(n)}
-                  className={`w-full flex items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/[0.05] ${i < notifs.length - 1 ? 'border-b border-white/[0.05]' : ''}`}
+                  className={`group relative flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-white/[0.05] ${i < notifs.length - 1 ? 'border-b border-white/[0.05]' : ''}`}
                   style={!n.is_read ? { background: 'rgba(201,168,76,0.04)' } : {}}>
 
+                  {/* Clickable area */}
+                  <button
+                    onClick={() => handleNotifClick(n)}
+                    className="absolute inset-0 z-0"
+                    aria-label={notifText(n)}
+                  />
+
                   {/* Avatar / icon */}
-                  <div className="w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center"
+                  <div className="relative z-10 w-9 h-9 rounded-full shrink-0 overflow-hidden flex items-center justify-center pointer-events-none"
                     style={{ background: `${meta.color}20`, border: `1.5px solid ${meta.color}40` }}>
                     {n.senderAvatar
                       // eslint-disable-next-line @next/next/no-img-element
@@ -239,18 +309,29 @@ export default function NotificationBell() {
                   </div>
 
                   {/* Text */}
-                  <div className="flex-1 min-w-0">
+                  <div className="relative z-10 flex-1 min-w-0 pointer-events-none">
                     <p className={`text-sm leading-snug break-words font-medium ${n.is_read ? 'text-white/60' : 'text-white'}`}>
                       {notifText(n)}
                     </p>
                     <p className="text-[11px] text-white/35 mt-1">{timeAgo(n.created_at)}</p>
                   </div>
 
-                  {/* Unread dot */}
-                  {!n.is_read && (
-                    <span className="w-2 h-2 rounded-full shrink-0 mt-2" style={{ background: meta.color }} />
-                  )}
-                </button>
+                  {/* Right side: unread dot / delete button */}
+                  <div className="relative z-10 flex items-center shrink-0 mt-1 h-6">
+                    {/* Unread dot — hidden on hover to show trash */}
+                    {!n.is_read && (
+                      <span className="w-2 h-2 rounded-full group-hover:hidden" style={{ background: meta.color }} />
+                    )}
+                    {/* Delete button — always visible on hover */}
+                    <button
+                      onClick={e => deleteOne(e, n.id)}
+                      disabled={deletingId === n.id}
+                      className="hidden group-hover:flex w-6 h-6 rounded-lg items-center justify-center text-white/30 hover:text-red-400 hover:bg-red-400/10 transition-colors disabled:opacity-40"
+                      aria-label="Delete notification">
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
               )
             })}
           </div>

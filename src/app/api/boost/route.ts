@@ -1,4 +1,5 @@
 import { createClient, getCachedUser } from '@/lib/supabase/server'
+import { sendPushToUser } from '@/lib/send-push'
 
 const BOOST_DURATION_MINS = 30
 
@@ -62,12 +63,16 @@ export async function POST() {
 
   if (error) return Response.json({ error: error.message }, { status: 500 })
 
-  // Create notification for the user
   await supabase.from('notifications').insert({
     user_id: user.id,
     type: 'profile_boost',
     data: { boosted_until: boostedUntil, duration_mins: BOOST_DURATION_MINS },
   })
+  sendPushToUser(user.id, {
+    title: 'Profile Boosted! ⚡',
+    body: `Your profile is now boosted for ${BOOST_DURATION_MINS} minutes`,
+    url: '/profile',
+  }).catch(() => {})
 
   return Response.json({ active: true, boostedUntil })
 }

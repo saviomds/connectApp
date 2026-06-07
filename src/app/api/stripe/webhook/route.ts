@@ -1,5 +1,6 @@
 import { getStripe, getWebhookSecret, tierFromPlanId, isProfessionalPlan, type PlanId } from '@/lib/stripe'
 import { adminSupabase } from '@/lib/supabase/admin'
+import { sendPushToUser } from '@/lib/send-push'
 import { createClient } from '@supabase/supabase-js'
 import type Stripe from 'stripe'
 
@@ -49,6 +50,11 @@ export async function POST(request: Request) {
     await db.from('notifications').insert({
       user_id: userId, type: 'premium', data: { plan_id: planId },
     })
+    sendPushToUser(userId, {
+      title: 'Premium Activated! 👑',
+      body:  'Your premium subscription is now active. Enjoy your benefits!',
+      url:   '/premium',
+    }).catch(() => {})
   }
 
   if (event.type === 'customer.subscription.deleted') {

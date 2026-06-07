@@ -1,5 +1,6 @@
 import { getAdminUser } from '@/lib/admin'
 import { adminSupabase } from '@/lib/supabase/admin'
+import { sendPushToUser } from '@/lib/send-push'
 
 export async function GET(request: Request) {
   const admin = await getAdminUser()
@@ -183,11 +184,13 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Failed to create conversation' }, { status: 500 })
   }
 
-  // Notify both users
   await adminSupabase.from('notifications').insert([
     { user_id: uid1, type: 'match', data: { match_id: match.id, matched_with: uid2, admin_created: true } },
     { user_id: uid2, type: 'match', data: { match_id: match.id, matched_with: uid1, admin_created: true } },
   ])
+
+  sendPushToUser(uid1, { title: "It's a Match! 💛", body: "You've been matched! Go say hello.", url: '/matches' }).catch(() => {})
+  sendPushToUser(uid2, { title: "It's a Match! 💛", body: "You've been matched! Go say hello.", url: '/matches' }).catch(() => {})
 
   return Response.json({ match }, { status: 201 })
 }

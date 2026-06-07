@@ -1,6 +1,7 @@
 import { getAdminUser } from '@/lib/admin'
 import { createClient } from '@/lib/supabase/server'
 import { adminSupabase } from '@/lib/supabase/admin'
+import { sendPushToUser } from '@/lib/send-push'
 
 export async function PATCH(
   request: Request,
@@ -67,6 +68,11 @@ export async function PATCH(
       type:    'premium',
       data:    { kind: 'verification_approved', category: req.category },
     })
+    sendPushToUser(req.user_id, {
+      title: 'Verification Approved ✅',
+      body:  'Your profile has been verified! You now have Level 3 access.',
+      url:   '/profile',
+    }).catch(() => {})
   } else {
     await supabase
       .from('profiles')
@@ -78,6 +84,11 @@ export async function PATCH(
       type:    'premium',
       data:    { kind: 'verification_rejected', note: note ?? '' },
     })
+    sendPushToUser(req.user_id, {
+      title: 'Verification Update',
+      body:  note ? `Your verification was not approved: ${note}` : 'Your verification request was not approved.',
+      url:   '/profile',
+    }).catch(() => {})
   }
 
   return Response.json({ ok: true, status: newStatus })
