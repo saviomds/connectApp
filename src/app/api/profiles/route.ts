@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCachedUser } from '@/lib/supabase/server'
+import { computeUserLevel, getAllowedLevels } from '@/lib/discovery-levels'
 
 export async function GET(request: Request) {
   const user = await getCachedUser()
@@ -14,13 +15,18 @@ export async function GET(request: Request) {
   const limit       = Math.min(parseInt(searchParams.get('limit') ?? '20', 10), 50)
   const genderParam = searchParams.get('gender')
 
-  // Fetch requesting user's tier to enforce paid-only filters
+  // Fetch requester's own profile to determine their level and allowed visibility
   const { data: requester } = await supabase
     .from('profiles')
-    .select('is_premium')
+    .select('is_premium, is_verified, is_professional, category, unlocked_levels')
     .eq('id', user.id)
     .single()
-  const isPremium = requester?.is_premium ?? false
+
+  if (!requester) return Response.json({ error: 'Profile not found' }, { status: 404 })
+
+  const isPremium    = requester.is_premium ?? false
+  const myLevel      = computeUserLevel(requester)
+  const allowedLevels = getAllowedLevels(myLevel, isPremium, requester.unlocked_levels ?? [])
 
   // Gender filter is Gold/Platinum only — silently ignore if free user somehow sends it
   const gender = isPremium && genderParam && genderParam !== 'any' ? genderParam : null
@@ -48,14 +54,15 @@ export async function GET(request: Request) {
     .select('*')
     .eq('onboarding_completed', true)
     .eq('is_suspended', false)
+    .in('user_level', allowedLevels)  // ← level-based visibility gate
     .not('id', 'in', `(${excludeIds.join(',')})`)
     .gte('age', minAge)
     .lte('age', maxAge)
     .limit(limit)
 
-  if (onlineOnly)          query = query.eq('is_online', true)
+  if (onlineOnly)            query = query.eq('is_online', true)
   if (categories.length > 0) query = query.in('category', categories)
-  if (gender)              query = query.eq('gender', gender)
+  if (gender)                query = query.eq('gender', gender)
 
   const { data, error } = await query
   if (error) return Response.json({ error: error.message }, { status: 500 })
@@ -67,10 +74,8 @@ export async function GET(request: Request) {
     return (boosted ? 8 : 0) + (p.is_premium === true ? 4 : 0) + (p.is_verified === true ? 2 : 0)
   }
 
-  // Sort priority: boosted > premium > verified > everyone else
   profiles.sort((a, b) => scoreOf(b) - scoreOf(a))
 
-  // Shuffle within each same-priority tier so refreshes show different profiles first
   let start = 0
   while (start < profiles.length) {
     const tierScore = scoreOf(profiles[start])

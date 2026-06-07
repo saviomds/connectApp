@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCachedUser } from '@/lib/supabase/server'
+import { computeUserLevel, getAllowedLevels } from '@/lib/discovery-levels'
 
 export async function GET(request: Request) {
   const user = await getCachedUser()
@@ -11,6 +12,19 @@ export async function GET(request: Request) {
   const limit    = 24
   const freeOnly = searchParams.get('free_tonight') === 'true'
   const gender   = searchParams.get('gender') ?? ''
+
+  // Fetch requester's own profile to determine their level and allowed visibility
+  const { data: requester } = await supabase
+    .from('profiles')
+    .select('is_premium, is_verified, is_professional, category, unlocked_levels')
+    .eq('id', user.id)
+    .single()
+
+  if (!requester) return Response.json({ error: 'Profile not found' }, { status: 404 })
+
+  const isPremium     = requester.is_premium ?? false
+  const myLevel       = computeUserLevel(requester)
+  const allowedLevels = getAllowedLevels(myLevel, isPremium, requester.unlocked_levels ?? [])
 
   const [{ data: swipedRows }, { data: blockedRows }] = await Promise.all([
     supabase.from('swipes').select('target_id').eq('swiper_id', user.id).limit(500),
@@ -25,15 +39,17 @@ export async function GET(request: Request) {
 
   let query = supabase
     .from('profiles')
-    .select('id, full_name, avatar_url, photos, profession, company, city, country, age, is_verified, is_online, is_premium, premium_tier, free_tonight, interests, category')
+    .select('id, full_name, avatar_url, photos, profession, company, city, country, age, is_verified, is_online, is_premium, premium_tier, free_tonight, interests, category, user_level')
     .eq('onboarding_completed', true)
     .eq('is_suspended', false)
+    .in('user_level', allowedLevels)  // ← level-based visibility gate
     .order('is_online', { ascending: false })
     .order('updated_at', { ascending: false })
     .range(page * limit, page * limit + limit - 1)
 
   if (freeOnly) query = query.eq('free_tonight', true)
-  if (gender && gender !== 'everyone') query = query.eq('gender', gender)
+  // Gender filter is premium-only; silently ignore for free users
+  if (isPremium && gender && gender !== 'everyone') query = query.eq('gender', gender)
 
   const { data: profiles, error } = await query
 

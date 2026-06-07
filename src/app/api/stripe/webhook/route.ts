@@ -59,7 +59,10 @@ export async function POST(request: Request) {
       if (planId && isProfessionalPlan(planId)) {
         await db.from('profiles').update({ is_professional: false }).eq('id', userId)
       } else {
-        await db.from('profiles').update({ is_premium: false, premium_tier: null }).eq('id', userId)
+        // Clear unlocked_levels when premium lapses so cross-level visibility is revoked
+        await db.from('profiles')
+          .update({ is_premium: false, premium_tier: null, unlocked_levels: [] })
+          .eq('id', userId)
       }
     }
   }

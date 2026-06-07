@@ -44,6 +44,10 @@ export interface DbProfile {
   boosted_until: string | null
   is_admin: boolean
   prompts: IcebreakerPrompt[]
+  /** Computed level: 1 = Youth, 2 = Professional, 3 = Verified */
+  user_level: 1 | 2 | 3
+  /** Additional levels this premium user has unlocked for discovery */
+  unlocked_levels: number[]
   created_at: string
   updated_at: string
 }

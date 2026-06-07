@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCachedUser } from '@/lib/supabase/server'
+import { computeUserLevel, getAllowedLevels } from '@/lib/discovery-levels'
 
 // Daily top picks — computed fresh from compatible profiles.
 // Score = is_verified(3) + is_premium(1) + active_7d(2) + interest_overlap
@@ -10,12 +11,24 @@ export async function GET() {
   const supabase = await createClient()
 
   const [{ data: meRow }, { data: swipedRows }, { data: blockedRows }] = await Promise.all([
-    supabase.from('profiles').select('interests, show_gender, is_premium').eq('id', user.id).single(),
+    supabase
+      .from('profiles')
+      .select('interests, show_gender, is_premium, is_verified, is_professional, category, unlocked_levels')
+      .eq('id', user.id)
+      .single(),
     supabase.from('swipes').select('target_id').eq('swiper_id', user.id).limit(500),
     supabase.from('blocks').select('blocked_id, blocker_id'),
   ])
 
-  const myInterests = new Set<string>(meRow?.interests ?? [])
+  const myInterests   = new Set<string>(meRow?.interests ?? [])
+  const isPremium     = meRow?.is_premium ?? false
+  const myLevel       = computeUserLevel({
+    is_verified:    meRow?.is_verified    ?? false,
+    is_professional: meRow?.is_professional ?? false,
+    category:       meRow?.category       ?? null,
+  })
+  const allowedLevels = getAllowedLevels(myLevel, isPremium, meRow?.unlocked_levels ?? [])
+
   const excludeIds = new Set([
     user.id,
     ...(swipedRows  ?? []).map((r: { target_id: string }) => r.target_id),
@@ -26,9 +39,10 @@ export async function GET() {
 
   let query = supabase
     .from('profiles')
-    .select('id, full_name, avatar_url, photos, profession, company, city, country, age, is_verified, is_online, is_premium, premium_tier, free_tonight, interests, bio, prompts, updated_at')
+    .select('id, full_name, avatar_url, photos, profession, company, city, country, age, is_verified, is_online, is_premium, premium_tier, free_tonight, interests, bio, prompts, updated_at, user_level')
     .eq('onboarding_completed', true)
     .eq('is_suspended', false)
+    .in('user_level', allowedLevels)  // ← level-based visibility gate
     .gte('updated_at', sevenDaysAgo)
     .limit(80)
 
@@ -51,5 +65,5 @@ export async function GET() {
     .sort((a: { _score: number }, b: { _score: number }) => b._score - a._score)
     .slice(0, 10)
 
-  return Response.json({ picks: scored, isPremium: meRow?.is_premium ?? false })
+  return Response.json({ picks: scored, isPremium })
 }
