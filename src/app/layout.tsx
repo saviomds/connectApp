@@ -10,6 +10,7 @@ import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar'
 import PushPrompt from '@/components/PushPrompt'
 import SessionGuard from '@/components/SessionGuard'
 import ThemeScript from '@/components/ThemeScript'
+import AppSplash from '@/components/AppSplash'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
 
@@ -64,6 +65,38 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" data-scroll-behavior="smooth" className={`${geist.variable} h-full`} suppressHydrationWarning>
       <head><ThemeScript /></head>
       <body className="min-h-full bg-bg-primary text-text-primary">
+
+        {/* ── Zero-JS instant splash ────────────────────────────────────
+            Rendered in the initial HTML before JavaScript loads.
+            AppSplash fades it out once React is ready.            ── */}
+        <div
+          id="vibro-launch"
+          aria-hidden="true"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 201,
+            background: '#0A0A0B',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexDirection: 'column', gap: '16px',
+          }}
+        >
+          <div style={{
+            width: 96, height: 96, borderRadius: 32,
+            background: 'linear-gradient(135deg,#C9A84C,#E5C76B)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 40px rgba(201,168,76,0.35)',
+          }}>
+            <svg width="48" height="43" viewBox="0 0 20 18" fill="none" aria-hidden="true">
+              <path d="M1.5 2C4 12 9 16 9 16C9 16 14 12 18.5 2"
+                stroke="black" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="1.5" cy="2" r="1.5" fill="black" />
+              <circle cx="18.5" cy="2" r="1.5" fill="black" />
+            </svg>
+          </div>
+          <h1 style={{ color: '#FFFFFF', fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-0.05em', margin: 0 }}>VIBRO</h1>
+          <span style={{ color: '#C9A84C', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.4em', fontWeight: 700 }}>Elite Discovery</span>
+        </div>
+
+        <AppSplash />
         <Suspense fallback={<NavbarShell />}>
           <Navbar />
         </Suspense>
