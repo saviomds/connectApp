@@ -461,11 +461,12 @@ html[data-theme="light"] .photo-scrim-bottom {
    These target the most common hardcoded patterns in the codebase.
    ────────────────────────────────────────────────────────────────── */
 
-/* 1. Inline white / rgba-white text → dark text */
-html[data-theme="light"] [style*="color: rgba(255,255,255"] {
-  color: rgba(26,26,30,0.88) !important;
-}
-html[data-theme="light"] [style*="color:rgba(255,255,255"] {
+/* 1. Inline white / rgba-white text → dark text
+   Two forms: original (as written in code) + browser-normalized (spaces after rgba commas) */
+html[data-theme="light"] [style*="color: rgba(255,255,255"],
+html[data-theme="light"] [style*="color:rgba(255,255,255"],
+html[data-theme="light"] [style*="color: rgba(255, 255, 255"],
+html[data-theme="light"] [style*="color:rgba(255, 255, 255"] {
   color: rgba(26,26,30,0.88) !important;
 }
 html[data-theme="light"] [style*="color: #fff"],
@@ -537,20 +538,27 @@ html[data-theme="light"] [style*="linear-gradient(135deg,rgba(255,255,255,0.1"] 
   background: linear-gradient(135deg, rgba(0,0,0,0.12), rgba(0,0,0,0.06)) !important;
 }
 
-/* 3. Dark translucent glass backgrounds → light equivalent */
+/* 3. Dark translucent glass backgrounds → light equivalent
+   Two forms per rule: original (no spaces in rgba) + browser-normalized (spaces) */
 /* Catches 0.03–0.09 range */
 html[data-theme="light"] [style*="background: rgba(255,255,255,0.0"],
-html[data-theme="light"] [style*="background:rgba(255,255,255,0.0"] {
+html[data-theme="light"] [style*="background:rgba(255,255,255,0.0"],
+html[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.0"],
+html[data-theme="light"] [style*="background:rgba(255, 255, 255, 0.0"] {
   background: rgba(0,0,0,0.04) !important;
 }
 /* Catches 0.10–0.19 range */
 html[data-theme="light"] [style*="background: rgba(255,255,255,0.1"],
-html[data-theme="light"] [style*="background:rgba(255,255,255,0.1"] {
+html[data-theme="light"] [style*="background:rgba(255,255,255,0.1"],
+html[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.1"],
+html[data-theme="light"] [style*="background:rgba(255, 255, 255, 0.1"] {
   background: rgba(0,0,0,0.06) !important;
 }
 /* Catches 0.20–0.29 range */
 html[data-theme="light"] [style*="background: rgba(255,255,255,0.2"],
-html[data-theme="light"] [style*="background:rgba(255,255,255,0.2"] {
+html[data-theme="light"] [style*="background:rgba(255,255,255,0.2"],
+html[data-theme="light"] [style*="background: rgba(255, 255, 255, 0.2"],
+html[data-theme="light"] [style*="background:rgba(255, 255, 255, 0.2"] {
   background: rgba(0,0,0,0.09) !important;
 }
 
@@ -594,9 +602,13 @@ html[data-theme="light"] [style*="linear-gradient(to top,rgba(0,0,0,0.9"] {
 
 /* 6. Inline border colors using rgba(255,255,255,...) or rgba(232,...) */
 html[data-theme="light"] [style*="solid rgba(255,255,255"],
+html[data-theme="light"] [style*="solid rgba(255, 255, 255"],
 html[data-theme="light"] [style*="solid rgba(232,232,232"],
+html[data-theme="light"] [style*="solid rgba(232, 232, 232"],
 html[data-theme="light"] [style*="border-color: rgba(255,255,255"],
-html[data-theme="light"] [style*="border-color:rgba(255,255,255"] {
+html[data-theme="light"] [style*="border-color: rgba(255, 255, 255"],
+html[data-theme="light"] [style*="border-color:rgba(255,255,255"],
+html[data-theme="light"] [style*="border-color:rgba(255, 255, 255"] {
   border-color: rgba(0,0,0,0.10) !important;
 }
 

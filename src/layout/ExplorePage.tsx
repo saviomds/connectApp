@@ -170,14 +170,14 @@ export default function ExplorePage() {
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden mt-3 flex flex-wrap gap-2">
                 <button onClick={() => setFreeOnly(v => !v)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
-                  style={freeOnly ? { background: '#2ECC71', color: '#000' } : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.50)' }}>
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${freeOnly ? 'text-black' : 'glass text-white/50'}`}
+                  style={freeOnly ? { background: '#2ECC71' } : undefined}>
                   <Zap size={12} /> Free Tonight
                 </button>
                 {(['everyone', 'women', 'men'] as const).map(g => (
                   <button key={g} onClick={() => setGender(g)}
-                    className="px-3 py-1.5 rounded-xl text-xs font-semibold capitalize transition-all"
-                    style={gender === g ? { background: '#C9A84C', color: '#000' } : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.50)' }}>
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold capitalize transition-all ${gender === g ? 'text-black' : 'glass text-white/50'}`}
+                    style={gender === g ? { background: '#C9A84C' } : undefined}>
                     {g}
                   </button>
                 ))}
