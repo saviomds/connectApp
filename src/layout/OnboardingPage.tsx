@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ArrowLeft, MapPin, Briefcase, User, Check, Lock, ShieldCheck, Crown, Loader2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, MapPin, Briefcase, User, Check, Lock, ShieldCheck, Crown, Loader2, Heart } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import VerificationRequestModal from '@/components/VerificationRequestModal';
 
@@ -27,6 +27,16 @@ export default function OnboardingPage() {
   const [age, setAge] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [lookingFor, setLookingFor] = useState('');
+
+  const LOOKING_FOR_OPTIONS = [
+    { id: 'relationship', label: 'Relationship', emoji: '❤️' },
+    { id: 'dating',       label: 'Dating',        emoji: '🌹' },
+    { id: 'friendship',   label: 'Friendship',    emoji: '🤝' },
+    { id: 'networking',   label: 'Networking',    emoji: '💼' },
+    { id: 'casual',       label: 'Casual',        emoji: '☕' },
+    { id: 'not_sure',     label: 'Not sure yet',  emoji: '🤔' },
+  ];
   const [gatedCategory, setGatedCategory] = useState<{ id: string; label: string } | null>(null);
   const [showVerif, setShowVerif] = useState(false);
   const [professionalLoading, setProfessionalLoading] = useState(false);
@@ -54,7 +64,7 @@ export default function OnboardingPage() {
     const res = await fetch('/api/onboarding', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ category, profession, age, bio, city, country }),
+      body: JSON.stringify({ category, profession, age, bio, city, country, looking_for: lookingFor || undefined }),
     });
 
     setLoading(false);
@@ -207,11 +217,35 @@ export default function OnboardingPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-white/70 mb-1.5">Age *</label>
+                  <label className="block text-sm font-medium text-white/70 mb-1.5">Age * <span className="text-white/30 font-normal">(must be 18+)</span></label>
                   <div className="relative">
                     <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
-                    <input type="number" min={18} max={100} value={age} onChange={(e) => setAge(e.target.value)} placeholder="Your age"
+                    <input type="number" min={18} max={100} value={age}
+                      onChange={(e) => { setAge(e.target.value); setError(''); }}
+                      placeholder="Your age"
                       className="w-full h-12 pl-10 pr-4 rounded-xl bg-white/[0.06] border border-white/10 text-white placeholder-white/25 text-sm input-focus" />
+                  </div>
+                  {age && parseInt(age) < 18 && (
+                    <p className="text-xs text-red-400 mt-1.5">You must be at least 18 years old to use Vibro.</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-2">
+                    <Heart size={13} className="inline mr-1.5 opacity-50" />
+                    I&apos;m looking for <span className="text-white/30 font-normal">(optional)</span>
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {LOOKING_FOR_OPTIONS.map(({ id, label, emoji }) => (
+                      <button key={id} type="button"
+                        onClick={() => setLookingFor(lookingFor === id ? '' : id)}
+                        className="flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-medium transition-all"
+                        style={lookingFor === id
+                          ? { background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.4)', color: '#C9A84C' }
+                          : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.45)' }
+                        }>
+                        <span className="text-base">{emoji}</span>{label}
+                      </button>
+                    ))}
                   </div>
                 </div>
                 <div>
@@ -224,7 +258,13 @@ export default function OnboardingPage() {
                 <button onClick={() => setStep(1)} className="h-12 px-5 glass rounded-xl text-white/60 hover:text-white flex items-center gap-1.5 text-sm">
                   <ArrowLeft size={15} /> Back
                 </button>
-                <button onClick={() => profession && age && setStep(3)} disabled={!profession || !age}
+                <button
+                  onClick={() => {
+                    if (!profession || !age) return;
+                    if (parseInt(age) < 18) { setError('You must be at least 18 years old to use Vibro.'); return; }
+                    setStep(3);
+                  }}
+                  disabled={!profession || !age || parseInt(age) < 18}
                   className="btn-gold flex-1 h-12 rounded-xl font-semibold text-black flex items-center justify-center gap-2 disabled:opacity-40">
                   Continue <ArrowRight size={16} />
                 </button>

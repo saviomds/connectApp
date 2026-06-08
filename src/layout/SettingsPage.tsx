@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 import {
   ArrowLeft, Lock, Bell, Shield, Trash2, LogOut,
   ChevronRight, Eye, EyeOff, CheckCircle, ShieldCheck, Loader2,
-  Sun, Moon, MapPin, Users, Zap, BookOpen,
+  Sun, Moon, MapPin, Users, Zap, BookOpen, Sparkles, Download,
   HelpCircle, FileText, ScrollText, Scale, ExternalLink, Phone,
   CheckCircle2,
 } from 'lucide-react';
@@ -24,13 +24,27 @@ interface Prefs {
   show_gender:           'everyone' | 'men' | 'women'
   discovery_city:        string
   discovery_country:     string
+  is_hidden:             boolean
+  min_age_pref:          number | null
+  max_age_pref:          number | null
+  looking_for:           string | null
 }
 
 const DEFAULT_PREFS: Prefs = {
   notify_matches: true, notify_messages: true, show_read_receipts: true,
   notify_sms: false, free_tonight: false,
   show_gender: 'everyone', discovery_city: '', discovery_country: '',
+  is_hidden: false, min_age_pref: null, max_age_pref: null, looking_for: null,
 }
+
+const LOOKING_FOR_OPTIONS = [
+  { id: 'relationship', label: 'Relationship',  emoji: '❤️'  },
+  { id: 'dating',       label: 'Dating',         emoji: '🌹'  },
+  { id: 'friendship',   label: 'Friendship',     emoji: '🤝'  },
+  { id: 'networking',   label: 'Networking',     emoji: '💼'  },
+  { id: 'casual',       label: 'Casual',         emoji: '☕'  },
+  { id: 'not_sure',     label: 'Not sure yet',   emoji: '🤔'  },
+] as const
 
 type Section = 'main' | 'password' | 'delete' | 'location'
 
@@ -123,6 +137,26 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
     await fetch('/api/settings/preferences', {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ show_gender: val }),
+    });
+    setSavingPref(null);
+  }
+
+  async function saveAgePref(min: number | null, max: number | null) {
+    setSavingPref('age_pref');
+    setPrefs(p => ({ ...p, min_age_pref: min, max_age_pref: max }));
+    await fetch('/api/settings/preferences', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ min_age_pref: min, max_age_pref: max }),
+    });
+    setSavingPref(null);
+  }
+
+  async function setLookingFor(val: string | null) {
+    setPrefs(p => ({ ...p, looking_for: val }));
+    setSavingPref('looking_for');
+    await fetch('/api/settings/preferences', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ looking_for: val }),
     });
     setSavingPref(null);
   }
@@ -468,13 +502,98 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
                   )
                 }
               </div>
+              {/* Age range */}
+              <div className="px-5 py-4">
+                <div className="flex items-center gap-4 mb-3">
+                  <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-white/[0.06]">
+                    <BookOpen size={16} className="text-white/50" />
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-white">Age Range</p>
+                    <p className="text-xs text-white/35 mt-0.5">
+                      {prefs.min_age_pref || prefs.max_age_pref
+                        ? `${prefs.min_age_pref ?? 18}–${prefs.max_age_pref ?? 99} years`
+                        : 'Any age'}
+                    </p>
+                  </div>
+                  {savingPref === 'age_pref' && <Loader2 size={14} className="animate-spin text-white/30" />}
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1">
+                    <label className="text-[10px] text-white/30 mb-1 block">Min age</label>
+                    <input
+                      type="number" min={18} max={98}
+                      value={prefs.min_age_pref ?? ''}
+                      placeholder="18"
+                      onChange={e => {
+                        const v = e.target.value === '' ? null : parseInt(e.target.value)
+                        setPrefs(p => ({ ...p, min_age_pref: v }))
+                      }}
+                      onBlur={() => saveAgePref(prefs.min_age_pref, prefs.max_age_pref)}
+                      className="w-full h-9 px-3 rounded-xl bg-white/[0.06] border border-white/10 text-white text-sm text-center outline-none focus:border-amber-400/40"
+                    />
+                  </div>
+                  <span className="text-white/20 text-sm mt-4">–</span>
+                  <div className="flex-1">
+                    <label className="text-[10px] text-white/30 mb-1 block">Max age</label>
+                    <input
+                      type="number" min={19} max={99}
+                      value={prefs.max_age_pref ?? ''}
+                      placeholder="Any"
+                      onChange={e => {
+                        const v = e.target.value === '' ? null : parseInt(e.target.value)
+                        setPrefs(p => ({ ...p, max_age_pref: v }))
+                      }}
+                      onBlur={() => saveAgePref(prefs.min_age_pref, prefs.max_age_pref)}
+                      className="w-full h-9 px-3 rounded-xl bg-white/[0.06] border border-white/10 text-white text-sm text-center outline-none focus:border-amber-400/40"
+                    />
+                  </div>
+                  {(prefs.min_age_pref || prefs.max_age_pref) && (
+                    <button
+                      onClick={() => saveAgePref(null, null)}
+                      className="mt-4 text-xs text-white/30 hover:text-white/60 transition-colors"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+              </div>
+              {/* Looking for */}
+              <div className="px-5 py-4">
+                <div className="flex items-center gap-4 mb-3">
+                  <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-white/[0.06]">
+                    <Sparkles size={16} className="text-white/50" />
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-white">I&apos;m Looking For</p>
+                    <p className="text-xs text-white/35 mt-0.5">Shown on your profile</p>
+                  </div>
+                  {savingPref === 'looking_for' && <Loader2 size={14} className="animate-spin text-white/30" />}
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {LOOKING_FOR_OPTIONS.map(({ id, label, emoji }) => (
+                    <button key={id}
+                      onClick={() => setLookingFor(prefs.looking_for === id ? null : id)}
+                      disabled={!prefsLoaded}
+                      className="flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl text-xs font-medium transition-all"
+                      style={prefs.looking_for === id
+                        ? { background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.35)', color: '#C9A84C' }
+                        : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.45)' }
+                      }
+                    >
+                      <span className="text-base">{emoji}</span>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </section>
 
           {/* ── Privacy ── */}
           <section>
             <p className="text-xs font-semibold uppercase tracking-widest text-white/30 mb-2 px-1">Privacy</p>
-            <div className="glass rounded-2xl overflow-hidden">
+            <div className="glass rounded-2xl overflow-hidden divide-y divide-white/[0.05]">
               <div className="flex items-center gap-4 px-5 py-4">
                 <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-white/[0.06]">
                   <Eye size={16} className="text-white/50" />
@@ -484,6 +603,22 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
                   <p className="text-xs text-white/35 mt-0.5">Show when you&apos;ve read messages</p>
                 </div>
                 <Toggle prefKey="show_read_receipts" />
+              </div>
+              {/* Hide profile */}
+              <div className="flex items-center gap-4 px-5 py-4">
+                <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  style={prefs.is_hidden
+                    ? { background: 'rgba(231,76,60,0.12)', border: '1px solid rgba(231,76,60,0.2)' }
+                    : { background: 'rgba(255,255,255,0.06)' }}>
+                  <EyeOff size={16} style={{ color: prefs.is_hidden ? '#E74C3C' : 'rgba(255,255,255,0.5)' }} />
+                </span>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-white">Hide My Profile</p>
+                  <p className="text-xs text-white/35 mt-0.5">
+                    {prefs.is_hidden ? 'You won\'t appear in discovery' : 'Pause without deleting your account'}
+                  </p>
+                </div>
+                <Toggle prefKey="is_hidden" />
               </div>
             </div>
           </section>
@@ -536,14 +671,15 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
                   <ChevronRight size={16} className="text-white/30 shrink-0" />
                 </Link>
               ))}
-              <a href="https://matchgroup.com" target="_blank" rel="noopener noreferrer"
+              {/* GDPR data export */}
+              <a href="/api/settings/export-data" download="my-vibro-data.json"
                 className="flex items-center gap-4 px-5 py-4 hover:bg-white/[0.03] transition-colors">
                 <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-white/[0.06]">
-                  <ExternalLink size={16} className="text-white/50" />
+                  <Download size={16} className="text-white/50" />
                 </span>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-white">Match Group</p>
-                  <p className="text-xs text-white/35 mt-0.5">Part of the Match Group family</p>
+                  <p className="text-sm font-medium text-white">Download My Data</p>
+                  <p className="text-xs text-white/35 mt-0.5">Export a copy of your account data (GDPR)</p>
                 </div>
                 <ExternalLink size={14} className="text-white/20 shrink-0" />
               </a>

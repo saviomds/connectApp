@@ -3,8 +3,13 @@ import { createClient } from '@/lib/supabase/server'
 // Core columns that always exist (shipped in original schema).
 const CORE_COLS  = new Set(['notify_matches', 'notify_messages', 'show_read_receipts'])
 // Extended columns added in new_features.sql migration — may not exist yet.
-const EXT_COLS   = new Set(['notify_sms', 'free_tonight', 'show_gender', 'discovery_city', 'discovery_country'])
-const ALLOWED_GENDER = new Set(['everyone', 'men', 'women'])
+const EXT_COLS   = new Set([
+  'notify_sms', 'free_tonight', 'show_gender', 'discovery_city', 'discovery_country',
+  // v2 columns (added in discovery_prefs.sql)
+  'is_hidden', 'min_age_pref', 'max_age_pref', 'looking_for',
+])
+const ALLOWED_GENDER    = new Set(['everyone', 'men', 'women'])
+const ALLOWED_LOOKING   = new Set(['relationship', 'dating', 'friendship', 'networking', 'casual', 'not_sure'])
 
 export async function GET() {
   const supabase = await createClient()
@@ -14,7 +19,7 @@ export async function GET() {
   // Attempt 1: full query including new columns.
   const { data, error: queryErr } = await supabase
     .from('profiles')
-    .select('notify_matches, notify_messages, show_read_receipts, notify_sms, free_tonight, show_gender, discovery_city, discovery_country')
+    .select('notify_matches, notify_messages, show_read_receipts, notify_sms, free_tonight, show_gender, discovery_city, discovery_country, is_hidden, min_age_pref, max_age_pref, looking_for')
     .eq('id', user.id)
     .single()
 
@@ -39,6 +44,10 @@ export async function GET() {
     show_gender:        row?.show_gender         ?? 'everyone',
     discovery_city:     row?.discovery_city      ?? '',
     discovery_country:  row?.discovery_country   ?? '',
+    is_hidden:          row?.is_hidden           ?? false,
+    min_age_pref:       row?.min_age_pref        ?? null,
+    max_age_pref:       row?.max_age_pref        ?? null,
+    looking_for:        row?.looking_for         ?? null,
   })
 }
 
@@ -55,8 +64,16 @@ export async function PATCH(request: Request) {
     const val = body[key]
     if (EXT_COLS.has(key as string)) {
       if (typeof val === 'boolean') fullUpdate[key] = val
+      if (typeof val === 'number' && (key === 'min_age_pref' || key === 'max_age_pref')) {
+        const n = Math.floor(val)
+        if (n >= 18 && n <= 99) fullUpdate[key] = n
+      }
+      if (val === null && (key === 'min_age_pref' || key === 'max_age_pref' || key === 'looking_for')) {
+        fullUpdate[key] = null
+      }
       if (typeof val === 'string') {
         if (key === 'show_gender' && !ALLOWED_GENDER.has(val)) continue
+        if (key === 'looking_for' && !ALLOWED_LOOKING.has(val)) continue
         fullUpdate[key] = val
       }
     } else if (CORE_COLS.has(key as string) && typeof val === 'boolean') {

@@ -73,7 +73,7 @@ export default async function DiscoverPage() {
   const [{ data: profile }, { data: swipedRows }, { data: blockedRows }, { data: activeMatches }] = await Promise.all([
     supabase
       .from('profiles')
-      .select('onboarding_completed, profession, category, age')
+      .select('onboarding_completed, profession, category, age, show_gender, min_age_pref, max_age_pref')
       .eq('id', user.id)
       .single(),
     supabase
@@ -130,7 +130,8 @@ export default async function DiscoverPage() {
     ...matchedIds
   ])]
 
-  let profilesQuery = supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let profilesQuery: any = supabase
     .from('profiles')
     .select('*')
     .eq('onboarding_completed', true)
@@ -138,10 +139,23 @@ export default async function DiscoverPage() {
     .neq('id', user.id)
     .limit(20)
 
+  // Exclude hidden profiles (column added in discovery_prefs.sql migration)
+  // Falls back gracefully if column doesn't exist yet — query still returns profiles.
+  profilesQuery = profilesQuery.or('is_hidden.is.null,is_hidden.eq.false')
+
+  // Gender preference filter (stored in user's own profile)
+  const genderPref = (profile as { show_gender?: string } | null)?.show_gender ?? 'everyone'
+  if (genderPref === 'men')   profilesQuery = profilesQuery.eq('gender', 'male')
+  if (genderPref === 'women') profilesQuery = profilesQuery.eq('gender', 'female')
+
+  // Age range filter
+  const minAge = (profile as { min_age_pref?: number | null } | null)?.min_age_pref
+  const maxAge = (profile as { max_age_pref?: number | null } | null)?.max_age_pref
+  if (minAge) profilesQuery = profilesQuery.gte('age', minAge)
+  if (maxAge) profilesQuery = profilesQuery.lte('age', maxAge)
+
   // Ensure the list is filtered on the server before sending to the client
   if (excludeIds.length > 0) {
-    // PostgREST requires the parentheses for the 'in' filter
-    // Format: .not('id', 'in', '(uuid1,uuid2,...)')
     const idList = excludeIds.filter(id => !!id).join(',')
     profilesQuery = profilesQuery.not('id', 'in', `(${idList})`)
   }

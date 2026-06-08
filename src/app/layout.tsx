@@ -11,6 +11,7 @@ import PushPrompt from '@/components/PushPrompt'
 import SessionGuard from '@/components/SessionGuard'
 import ThemeScript from '@/components/ThemeScript'
 import AppSplash from '@/components/AppSplash'
+import CookieBanner from '@/components/CookieBanner'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
 
@@ -74,6 +75,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {user && <TierUpgradeTracker userId={user.id} />}
         <ServiceWorkerRegistrar />
         {user && <PushPrompt />}
+        <CookieBanner />
         {children}
       </body>
     </html>
