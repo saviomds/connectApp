@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   Save, Eye, EyeOff, CheckCircle, AlertCircle, Loader2,
   CreditCard, ExternalLink, Copy, Check, Terminal, RefreshCw,
-  AlertTriangle,
+  AlertTriangle, Smartphone,
 } from 'lucide-react'
 
 interface Setting {
@@ -42,6 +42,38 @@ INSERT INTO app_settings (key, value, label, description, category, is_secret) V
   ('stripe_platinum_monthly_price_id','', 'Platinum Monthly Price ID',    'price_... – $49/month',                             'stripe', false),
   ('stripe_platinum_yearly_price_id', '', 'Platinum Yearly Price ID',     'price_... – $411.60/year',                          'stripe', false)
 ON CONFLICT (key) DO NOTHING;
+
+-- Juice Mobile Payment settings
+INSERT INTO app_settings (key, value, label, description, category, is_secret) VALUES
+  ('juice_enabled',      'false', 'Juice Payments Enabled', 'Enable Juice mobile payment as a fallback when Stripe is not configured', 'juice', false),
+  ('juice_phone',        '',      'Juice Phone Number',      'Phone number users send payment to (e.g. +230 5XXX XXXX)', 'juice', false),
+  ('juice_account_name', '',      'Account Holder Name',     'Name shown to users on the payment instructions', 'juice', false),
+  ('juice_instructions', '',      'Payment Instructions',    'Custom instructions shown to users (optional)', 'juice', false),
+  ('juice_qr_url',       '',      'QR Code Image URL',       'Public URL of your Juice QR code image (optional)', 'juice', false)
+ON CONFLICT (key) DO NOTHING;
+
+-- Juice payment submissions table
+CREATE TABLE IF NOT EXISTS juice_payment_submissions (
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  plan_id         TEXT        NOT NULL,
+  full_name       TEXT        NOT NULL,
+  email           TEXT        NOT NULL,
+  phone           TEXT        NOT NULL,
+  txn_ref         TEXT,
+  screenshot_path TEXT        NOT NULL,
+  status          TEXT        NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending','approved','rejected')),
+  admin_notes     TEXT,
+  reviewed_by     UUID        REFERENCES profiles(id),
+  reviewed_at     TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE juice_payment_submissions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "juice_subs: users can view own" ON juice_payment_submissions
+  FOR SELECT USING (auth.uid() = user_id);
+-- IMPORTANT: also create a private Storage bucket named "juice-screenshots"
+-- in Supabase Dashboard → Storage → New bucket
 
 ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
 
@@ -137,6 +169,70 @@ function Field({ setting, value, onChange }: {
           </button>
         )}
       </div>
+    </div>
+  )
+}
+
+function TextareaField({ setting, value, onChange }: {
+  setting: Setting
+  value: string
+  onChange: (key: string, v: string) => void
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-1.5">
+        <label className="text-sm font-medium text-white/70">{setting.label}</label>
+        {setting.is_set && (
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-green-400"
+            style={{ background: 'rgba(46,204,113,0.12)', border: '1px solid rgba(46,204,113,0.2)' }}>
+            SET
+          </span>
+        )}
+      </div>
+      {setting.description && (
+        <p className="text-xs text-white/30 mb-1.5">{setting.description}</p>
+      )}
+      <textarea
+        value={value}
+        onChange={e => onChange(setting.key, e.target.value)}
+        placeholder={setting.is_set ? '(leave blank to keep current value)' : `Enter ${setting.label}…`}
+        rows={3}
+        style={{
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.10)',
+          outline: 'none',
+        }}
+        className="w-full px-4 py-3 rounded-xl text-white text-sm resize-none"
+        onFocus={e => (e.currentTarget.style.borderColor = 'rgba(99,91,255,0.5)')}
+        onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)')}
+      />
+    </div>
+  )
+}
+
+function ToggleField({ label, description, enabled, onChange }: {
+  label: string
+  description?: string
+  enabled: boolean
+  onChange: (v: boolean) => void
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex-1">
+        <p className="text-sm font-medium text-white/70">{label}</p>
+        {description && <p className="text-xs text-white/30 mt-0.5">{description}</p>}
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange(!enabled)}
+        aria-pressed={enabled}
+        className="relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0"
+        style={{ background: enabled ? '#2ECC71' : 'rgba(255,255,255,0.15)' }}>
+        <span
+          className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 shadow"
+          style={{ left: enabled ? '22px' : '4px' }}
+        />
+      </button>
     </div>
   )
 }
@@ -269,6 +365,13 @@ export default function AdminSettingsPage() {
   const apiKeySettings  = stripeSettings.filter(s =>
     ['stripe_publishable_key', 'stripe_secret_key', 'stripe_webhook_secret'].includes(s.key))
   const priceIdSettings = stripeSettings.filter(s => s.key.endsWith('_price_id'))
+
+  const juiceSettings   = settings.filter(s => s.category === 'juice')
+  const juiceEnabledInDB = juiceSettings.find(s => s.key === 'juice_enabled')?.value === 'true'
+  const juiceEnabled    = values['juice_enabled'] !== ''
+    ? values['juice_enabled'] === 'true'
+    : juiceEnabledInDB
+  const juiceTextSettings = juiceSettings.filter(s => s.key !== 'juice_enabled')
 
   // ── Danger Zone JSX (shared between both non-loading returns) ────────────
   const dangerZone = (
@@ -576,6 +679,69 @@ export default function AdminSettingsPage() {
             </div>
           )}
         </div>
+      </section>
+
+      {/* ── Juice Mobile Payment ────────────────────────────────────────── */}
+      <section className="mb-8">
+        <div className="flex items-center gap-2 mb-5">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ background: 'rgba(46,204,113,0.12)', border: '1px solid rgba(46,204,113,0.2)' }}>
+            <Smartphone size={15} style={{ color: '#2ECC71' }} />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-white">Juice Mobile Payment</h2>
+            <p className="text-xs text-white/35">
+              Fallback payment method — shown when Stripe is not configured.
+            </p>
+          </div>
+        </div>
+
+        {juiceSettings.length === 0 ? (
+          <div className="rounded-2xl p-4 text-sm text-white/50 leading-relaxed"
+            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <p className="font-semibold text-white/60 mb-1">Juice settings not seeded yet</p>
+            <p className="text-xs text-white/35 mb-3">
+              Run the updated SQL above (which now includes Juice settings), or click{' '}
+              <strong className="text-white/50">Try auto-seed</strong> in the warning banner above.
+              If you already ran the old SQL, click auto-seed to add the missing Juice rows.
+            </p>
+            <button onClick={handleSeed} disabled={seeding}
+              className="flex items-center gap-2 h-9 px-4 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
+              style={{ background: 'rgba(46,204,113,0.12)', border: '1px solid rgba(46,204,113,0.2)', color: '#2ECC71' }}>
+              {seeding ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+              {seeding ? 'Seeding…' : 'Seed Juice settings'}
+            </button>
+            {seedMsg && <p className="text-xs text-white/40 mt-2">{seedMsg}</p>}
+          </div>
+        ) : (
+          <div className="rounded-2xl p-6 flex flex-col gap-6"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <ToggleField
+              label="Enable Juice Payments"
+              description="When enabled and Stripe is not configured, users see the Juice payment form."
+              enabled={juiceEnabled}
+              onChange={v => handleChange('juice_enabled', v ? 'true' : 'false')}
+            />
+
+            <div className={`flex flex-col gap-4 transition-opacity ${juiceEnabled ? '' : 'opacity-40 pointer-events-none'}`}>
+              {juiceTextSettings.filter(s => s.key !== 'juice_instructions').map(s => (
+                <Field key={s.key} setting={s} value={values[s.key] ?? ''} onChange={handleChange} />
+              ))}
+              {juiceTextSettings.filter(s => s.key === 'juice_instructions').map(s => (
+                <TextareaField key={s.key} setting={s} value={values[s.key] ?? ''} onChange={handleChange} />
+              ))}
+            </div>
+
+            <div className="pt-2 text-xs text-white/30 leading-relaxed"
+              style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <p className="font-semibold text-white/40 mb-1">Storage bucket required</p>
+              Create a <strong className="text-white/50">private</strong> bucket named{' '}
+              <code className="text-white/50">juice-screenshots</code> in{' '}
+              <strong className="text-white/50">Supabase Dashboard → Storage</strong>.
+              Payment screenshots are stored there and only accessible by admins.
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Save */}

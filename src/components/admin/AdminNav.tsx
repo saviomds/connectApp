@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   BarChart3, Users, ShieldAlert, Settings, Home,
-  ShieldCheck, Heart, MessageCircle, Menu, X,
+  ShieldCheck, Heart, MessageCircle, Menu, X, Banknote,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useState, useEffect } from 'react'
@@ -14,9 +14,10 @@ const NAV = [
   { href: '/admin/users',         label: 'Users',        icon: Users,           exact: false },
   { href: '/admin/matches',       label: 'Matches',      icon: Heart,           exact: false },
   { href: '/admin/messages',      label: 'Messages',     icon: MessageCircle,   exact: false },
-  { href: '/admin/verifications', label: 'Verify',       icon: ShieldCheck,     exact: false },
-  { href: '/admin/reports',       label: 'Reports',      icon: ShieldAlert,     exact: false },
-  { href: '/admin/settings',      label: 'Settings',     icon: Settings,        exact: false },
+  { href: '/admin/verifications',   label: 'Verify',       icon: ShieldCheck,     exact: false },
+  { href: '/admin/reports',        label: 'Reports',      icon: ShieldAlert,     exact: false },
+  { href: '/admin/juice-payments', label: 'Payments',     icon: Banknote,        exact: false },
+  { href: '/admin/settings',       label: 'Settings',     icon: Settings,        exact: false },
 ]
 
 export default function AdminNav({ email }: { email: string }) {

@@ -9,6 +9,12 @@ const SEED_ROWS = [
   { key: 'stripe_gold_yearly_price_id',     value: '', label: 'Gold Yearly Price ID',        description: 'price_... – $243.60/year recurring price in Stripe', category: 'stripe', is_secret: false },
   { key: 'stripe_platinum_monthly_price_id',value: '', label: 'Platinum Monthly Price ID',   description: 'price_... – $49/month recurring price in Stripe',    category: 'stripe', is_secret: false },
   { key: 'stripe_platinum_yearly_price_id', value: '', label: 'Platinum Yearly Price ID',    description: 'price_... – $411.60/year recurring price in Stripe', category: 'stripe', is_secret: false },
+  // Juice Mobile Payment
+  { key: 'juice_enabled',      value: 'false', label: 'Juice Payments Enabled', description: 'Enable Juice mobile payment as a fallback when Stripe is not configured', category: 'juice', is_secret: false },
+  { key: 'juice_phone',        value: '',       label: 'Juice Phone Number',     description: 'Phone number users send payment to',           category: 'juice', is_secret: false },
+  { key: 'juice_account_name', value: '',       label: 'Account Holder Name',    description: 'Name shown on the payment instructions',       category: 'juice', is_secret: false },
+  { key: 'juice_instructions', value: '',       label: 'Payment Instructions',   description: 'Custom instructions shown to users',           category: 'juice', is_secret: false },
+  { key: 'juice_qr_url',       value: '',       label: 'QR Code Image URL',      description: 'Public URL of your Juice QR code (optional)',  category: 'juice', is_secret: false },
 ]
 
 export async function POST() {

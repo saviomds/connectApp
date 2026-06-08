@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Check, Crown, Zap, Star, Eye, Heart, TrendingUp, Shield, Loader2, BookOpen, BadgeCheck, ArrowRight } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { PlanId } from '@/lib/stripe';
+import JuicePaymentForm, { type JuiceConfig } from '@/components/JuicePaymentForm';
 
 const PLANS = [
   {
@@ -162,12 +163,43 @@ export default function PremiumPage({
   const router = useRouter();
   const searchParams = useSearchParams();
   const showProfessionalTab = searchParams.get('tab') === 'professional';
-  const [billing, setBilling]       = useState<'monthly' | 'yearly'>('monthly');
-  const [selected, setSelected]     = useState('gold');
-  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
-  const [stripeError, setStripeError] = useState('');
+  const [billing, setBilling]           = useState<'monthly' | 'yearly'>('monthly');
+  const [selected, setSelected]         = useState('gold');
+  const [loadingPlan, setLoadingPlan]   = useState<string | null>(null);
+  const [stripeError, setStripeError]   = useState('');
+  const [juiceFlowPlan, setJuiceFlowPlan] = useState<string | null>(null);
+  const [paymentConfig, setPaymentConfig] = useState<{
+    stripe_enabled: boolean
+    juice_enabled: boolean
+    juice_phone: string
+    juice_account_name: string
+    juice_instructions: string
+    juice_qr_url: string
+  } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/payment-config')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setPaymentConfig(d ?? { stripe_enabled: true, juice_enabled: false, juice_phone: '', juice_account_name: '', juice_instructions: '', juice_qr_url: '' }))
+      .catch(() => setPaymentConfig({ stripe_enabled: true, juice_enabled: false, juice_phone: '', juice_account_name: '', juice_instructions: '', juice_qr_url: '' }))
+  }, []);
 
   const handleSubscribe = async (planId: PlanId) => {
+    if (!paymentConfig) return;
+
+    // No payment method configured
+    if (!paymentConfig.stripe_enabled && !paymentConfig.juice_enabled) {
+      setStripeError('No payment method is configured. Please contact the admin.');
+      return;
+    }
+
+    // Juice-only fallback
+    if (!paymentConfig.stripe_enabled && paymentConfig.juice_enabled) {
+      setJuiceFlowPlan(planId);
+      return;
+    }
+
+    // Stripe flow (default or both-enabled)
     setLoadingPlan(planId);
     setStripeError('');
     try {
@@ -203,6 +235,29 @@ export default function PremiumPage({
       ? Math.round(plan.yearlyPrice / 12)
       : plan.monthlyPrice;
   };
+
+  // ── Juice payment flow ────────────────────────────────────────────────────
+  if (juiceFlowPlan && paymentConfig) {
+    const juiceConfig: JuiceConfig = {
+      phone:       paymentConfig.juice_phone,
+      accountName: paymentConfig.juice_account_name,
+      instructions: paymentConfig.juice_instructions,
+      qrUrl:       paymentConfig.juice_qr_url,
+    };
+    return (
+      <div className="min-h-screen pt-nav pb-nav-bottom px-4">
+        <div className="max-w-5xl mx-auto">
+          <JuicePaymentForm
+            planId={juiceFlowPlan}
+            billing={billing}
+            juiceConfig={juiceConfig}
+            onBack={() => setJuiceFlowPlan(null)}
+            onSuccess={() => setJuiceFlowPlan(null)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-nav pb-nav-bottom px-4">
@@ -320,6 +375,12 @@ export default function PremiumPage({
                     Included in Platinum
                   </div>
                 ) : plan.id !== 'free' && planId ? (
+                  !paymentConfig ? (
+                    <div className="w-full py-3 rounded-2xl flex items-center justify-center"
+                      style={{ background: 'rgba(255,255,255,0.06)' }}>
+                      <Loader2 size={14} className="animate-spin text-white/30" />
+                    </div>
+                  ) : (
                   <button
                     onClick={(e) => { e.stopPropagation(); handleSubscribe(planId); }}
                     disabled={isLoading}
@@ -328,12 +389,15 @@ export default function PremiumPage({
                   >
                     {isLoading ? (
                       <><Loader2 size={16} className="animate-spin" /> Processing…</>
+                    ) : !paymentConfig?.stripe_enabled && paymentConfig?.juice_enabled ? (
+                      isSelected ? `Pay with Juice` : `Choose ${plan.name}`
                     ) : isPremium && plan.id === 'platinum' ? (
                       'Upgrade to Platinum'
                     ) : (
                       isSelected ? `Get ${plan.name}` : `Choose ${plan.name}`
                     )}
                   </button>
+                  )
                 ) : (
                   <Link href="/discover" className="block w-full py-3 rounded-2xl font-semibold text-sm text-center bg-white/[0.06] text-white/60 hover:text-white hover:bg-white/10 transition-all">
                     Continue Free
@@ -385,7 +449,10 @@ export default function PremiumPage({
         </div>
 
         <p className="text-center text-xs text-white/25 mt-6">
-          Payments are processed securely by Stripe. Cancel anytime from your account settings.
+          {paymentConfig?.juice_enabled && !paymentConfig?.stripe_enabled
+            ? 'Payments verified manually within 24 hours via Juice mobile money.'
+            : 'Payments are processed securely by Stripe. Cancel anytime from your account settings.'
+          }
         </p>
       </div>
     </div>
