@@ -124,7 +124,7 @@ export default function PhoneVerifyModal({ onClose, onVerified }: Props) {
 
       <motion.div
         className="relative w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl overflow-hidden"
-        style={{ background: '#0F0F14', border: '1px solid rgba(255,255,255,0.08)' }}
+        style={{ background: 'var(--app-modal)', border: '1px solid var(--app-border)' }}
         initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
         onClick={e => e.stopPropagation()}

@@ -73,7 +73,7 @@ export default function OnboardingPage() {
     <div className="min-h-screen flex items-center justify-center px-4 py-8">
       <div className="fixed inset-0 -z-10">
         <Image src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=1600&q=80" alt="" fill className="object-cover opacity-10" />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(10,10,11,0.7), #0A0A0B)' }} />
+        <div className="absolute inset-0 hero-overlay" />
       </div>
 
       <div className="w-full max-w-lg">

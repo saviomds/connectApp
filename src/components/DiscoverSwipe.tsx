@@ -162,7 +162,7 @@ function ProfileSheet({ profile, onClose, onSwipe }: {
       <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
       <motion.div
         className="relative w-full sm:max-w-sm mx-auto overflow-hidden rounded-t-3xl"
-        style={{ background: '#0F0F14', maxHeight: '92dvh', display: 'flex', flexDirection: 'column' }}
+        style={{ background: 'var(--app-modal)', maxHeight: '92dvh', display: 'flex', flexDirection: 'column' }}
         initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
         onClick={e => e.stopPropagation()}>
@@ -181,7 +181,7 @@ function ProfileSheet({ profile, onClose, onSwipe }: {
               <span className="font-black text-white/10" style={{ fontSize: 120 }}>{(profile.full_name ?? '?').charAt(0)}</span>
             </div>
           )}
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top,#0F0F14 0%,transparent 55%)' }} />
+          <div className="absolute inset-0 card-scrim-top" />
 
           {/* Progress bars */}
           {allPhotos.length > 1 && (
@@ -296,8 +296,7 @@ function ProfileSheet({ profile, onClose, onSwipe }: {
         </div>
 
         {/* Fixed action bar */}
-        <div className="absolute bottom-0 left-0 right-0 px-5 pb-6 pt-8"
-          style={{ background: 'linear-gradient(to top, #0F0F14 65%, transparent)' }}>
+        <div className="absolute bottom-0 left-0 right-0 px-5 pb-6 pt-8 card-scrim-top2">
           <div className="flex items-center justify-center gap-4">
             <motion.button whileTap={{ scale: 0.92 }} onClick={() => act('pass')}
               className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg"
@@ -1106,8 +1105,7 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
 
       {/* Action buttons */}
       {deck.length > 0 && (
-        <div className="flex items-center justify-center gap-5 sm:gap-7 px-4 py-4 shrink-0"
-          style={{ background: 'linear-gradient(to top, #0A0A0B 60%, transparent)' }}>
+        <div className="flex items-center justify-center gap-5 sm:gap-7 px-4 py-4 shrink-0 card-scrim-hero">
 
           {/* Pass */}
           <motion.button

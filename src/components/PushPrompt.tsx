@@ -51,7 +51,7 @@ export default function PushPrompt() {
   return (
     <div
       className="fixed bottom-24 left-4 right-4 z-[70] flex items-center gap-3 px-4 py-3.5 rounded-2xl shadow-2xl md:left-auto md:right-6 md:w-96"
-      style={{ background: '#1A1A24', border: '1px solid rgba(201,168,76,0.3)' }}
+      style={{ background: 'var(--app-modal)', border: '1px solid rgba(201,168,76,0.3)' }}
     >
       <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
         style={{ background: 'rgba(201,168,76,0.12)' }}>

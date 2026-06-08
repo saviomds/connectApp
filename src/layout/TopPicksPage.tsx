@@ -63,7 +63,7 @@ function PickCard({ pick, index, isPremium }: { pick: Pick; index: number; isPre
 
         {/* Online / free tonight */}
         <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
-          {pick.is_online && <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#2ECC71', boxShadow: '0 0 0 2px #111116' }} />}
+          {pick.is_online && <span className="w-2.5 h-2.5 rounded-full" style={{ background: '#2ECC71', boxShadow: '0 0 0 2px var(--app-bg)' }} />}
           {pick.free_tonight && <span className="px-2 py-0.5 rounded-full text-[9px] font-bold text-black" style={{ background: '#2ECC71' }}>⚡ Free</span>}
         </div>
 

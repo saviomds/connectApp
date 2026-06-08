@@ -224,7 +224,7 @@ export default function ExplorePage() {
                   {/* Badges */}
                   <div className="absolute top-2 left-2 flex gap-1">
                     {profile.is_online && (
-                      <span className="w-2 h-2 rounded-full" style={{ background: '#2ECC71', boxShadow: '0 0 0 2px #0A0A0B' }} />
+                      <span className="w-2 h-2 rounded-full" style={{ background: '#2ECC71', boxShadow: '0 0 0 2px var(--app-bg)' }} />
                     )}
                     {profile.free_tonight && (
                       <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold text-black" style={{ background: '#2ECC71' }}>⚡</span>

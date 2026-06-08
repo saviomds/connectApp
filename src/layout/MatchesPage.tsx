@@ -415,7 +415,7 @@ function StoryPreviewModal({ item, onClose, onLikedBack, canSee }: {
               {(p.full_name?.[0] ?? '?').toUpperCase()}
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(15,15,20,0.98)] via-[rgba(15,15,20,0.15)] to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[rgba(15,15,20,0.98)] via-[rgba(15,15,20,0.15)] to-transparent photo-scrim-bottom" />
           <button onClick={onClose}
             className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white/60 hover:text-white border border-white/10 transition-all">
             <X size={16} />
@@ -587,7 +587,7 @@ function MatchCard({ match, onRemove, onExtend }: {
               {(p.full_name?.[0] ?? '?')}
             </div>
           )}
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top,rgba(0,0,0,0.92) 0%,rgba(0,0,0,0.1) 55%,transparent 100%)' }} />
+          <div className="absolute inset-0 card-scrim-match" />
 
           {/* Top row */}
           <div className="absolute top-3 left-3 right-3 flex items-center justify-between">

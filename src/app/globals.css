@@ -68,6 +68,15 @@
   --app-nav-border:   rgba(255,255,255,0.08);
   --app-input-bg:     rgba(255,255,255,0.06);
   --app-input-border: rgba(255,255,255,0.10);
+  /* Solid card/modal surface (not translucent) */
+  --app-modal:        #0F0F14;
+  --app-card:         #111118;
+  /* Hero overlay gradient (auth pages background image scrim) */
+  --hero-overlay:     linear-gradient(to bottom, rgba(10,10,11,0.55), #0A0A0B);
+  /* Card text-readability gradient (swipe cards) */
+  --card-scrim-top:   linear-gradient(to top, #0F0F14 0%, transparent 55%);
+  --card-scrim-top2:  linear-gradient(to top, #0F0F14 65%, transparent);
+  --card-scrim-hero:  linear-gradient(to top, #0A0A0B 60%, transparent);
 }
 
 html[data-theme="light"] {
@@ -83,6 +92,12 @@ html[data-theme="light"] {
   --app-nav-border:   rgba(0,0,0,0.08);
   --app-input-bg:     rgba(0,0,0,0.04);
   --app-input-border: rgba(0,0,0,0.10);
+  --app-modal:        #FFFFFF;
+  --app-card:         #FFFFFF;
+  --hero-overlay:     linear-gradient(to bottom, rgba(200,200,210,0.45), var(--app-bg));
+  --card-scrim-top:   linear-gradient(to top, rgba(215,215,222,0.97) 0%, transparent 55%);
+  --card-scrim-top2:  linear-gradient(to top, rgba(215,215,222,0.97) 65%, transparent);
+  --card-scrim-hero:  linear-gradient(to top, var(--app-bg) 60%, transparent);
 }
 
 /* Top clearance — clears the fixed top navbar + 1.5rem breathing room */
@@ -107,7 +122,7 @@ html,
 body {
   height: 100%;
   background-color: var(--app-bg);
-  color: #FFFFFF;
+  color: var(--app-text);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   scroll-behavior: smooth;
@@ -404,6 +419,186 @@ html[data-theme="light"] .animate-shimmer {
   100% { transform: scale(1);    opacity: 1; }
 }
 .animate-pop { animation: pop 0.22s ease forwards; }
+
+/* Splash screen — always dark (branded identity screen, never adapts) */
+.vibro-splash {
+  background: #0A0A0B !important;
+  color-scheme: dark;
+}
+
+/* ── Theme-aware utility classes (replace hardcoded inline values) ── */
+
+/* Auth-page hero overlay (replaces inline linear-gradient to #0A0A0B) */
+.hero-overlay {
+  background: var(--hero-overlay);
+}
+
+/* Swipe card bottom scrim (text readability over photo) */
+.card-scrim-top  { background: var(--card-scrim-top); }
+.card-scrim-top2 { background: var(--card-scrim-top2); }
+.card-scrim-hero { background: var(--card-scrim-hero); }
+
+/* Match card list grid scrim */
+.card-scrim-match {
+  background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.1) 55%, transparent 100%);
+}
+html[data-theme="light"] .card-scrim-match {
+  background: linear-gradient(to top, rgba(210,210,218,0.97) 0%, rgba(210,210,218,0.20) 55%, transparent 100%);
+}
+
+/* Match detail modal photo gradient (Tailwind arbitrary override) */
+html[data-theme="light"] .photo-scrim-bottom {
+  background: linear-gradient(to top, rgba(210,210,218,0.97) 0%, rgba(210,210,218,0.15) 55%, transparent 100%) !important;
+}
+
+/* Solid modal / sheet surface */
+.bg-modal  { background: var(--app-modal); }
+.bg-surface { background: var(--app-surface); }
+
+/* ── Light mode: inline style overrides ──────────────────────────────
+   React renders inline styles as HTML style attributes. Attribute
+   selectors with [style*="..."] + !important override them correctly.
+   These target the most common hardcoded patterns in the codebase.
+   ────────────────────────────────────────────────────────────────── */
+
+/* 1. Inline white / rgba-white text → dark text */
+html[data-theme="light"] [style*="color: rgba(255,255,255"] {
+  color: rgba(26,26,30,0.88) !important;
+}
+html[data-theme="light"] [style*="color:rgba(255,255,255"] {
+  color: rgba(26,26,30,0.88) !important;
+}
+html[data-theme="light"] [style*="color: #fff"],
+html[data-theme="light"] [style*="color:#fff"],
+html[data-theme="light"] [style*="color: #FFF"],
+html[data-theme="light"] [style*="color: #FFFF"],
+html[data-theme="light"] [style*="color: white"],
+html[data-theme="light"] [style*="color: #ffffff"],
+html[data-theme="light"] [style*="color: #FFFFFF"] {
+  color: #1A1A1E !important;
+}
+
+/* 2. Inline dark backgrounds → theme surface */
+html[data-theme="light"] [style*="background: #0A0A0B"],
+html[data-theme="light"] [style*="background:#0A0A0B"],
+html[data-theme="light"] [style*="background-color: #0A0A0B"],
+html[data-theme="light"] [style*="background-color:#0A0A0B"] {
+  background: var(--app-bg) !important;
+}
+html[data-theme="light"] [style*="background: #0F0F14"],
+html[data-theme="light"] [style*="background:#0F0F14"],
+html[data-theme="light"] [style*="background-color: #0F0F14"],
+html[data-theme="light"] [style*="background-color:#0F0F14"] {
+  background: var(--app-modal) !important;
+}
+html[data-theme="light"] [style*="background: #111114"],
+html[data-theme="light"] [style*="background:#111114"],
+html[data-theme="light"] [style*="background: #111118"],
+html[data-theme="light"] [style*="background:#111118"],
+html[data-theme="light"] [style*="background: #111116"],
+html[data-theme="light"] [style*="background:#111116"] {
+  background: var(--app-modal) !important;
+}
+html[data-theme="light"] [style*="background: #1A1A24"],
+html[data-theme="light"] [style*="background:#1A1A24"],
+html[data-theme="light"] [style*="background: #1C1C26"],
+html[data-theme="light"] [style*="background:#1C1C26"],
+html[data-theme="light"] [style*="background: #16161A"],
+html[data-theme="light"] [style*="background:#16161A"],
+html[data-theme="light"] [style*="background: #1A1A1F"],
+html[data-theme="light"] [style*="background:#1A1A1F"] {
+  background: var(--app-modal) !important;
+}
+
+/* 7. Pastel/light text colors designed for dark backgrounds → darker readable versions */
+html[data-theme="light"] [style*="color: #fde68a"],
+html[data-theme="light"] [style*="color:#fde68a"] { color: #92700a !important; }
+html[data-theme="light"] [style*="color: #fda4af"],
+html[data-theme="light"] [style*="color:#fda4af"] { color: #b91c40 !important; }
+html[data-theme="light"] [style*="color: #fca5a5"],
+html[data-theme="light"] [style*="color:#fca5a5"] { color: #b91c40 !important; }
+html[data-theme="light"] [style*="color: #E8E8E8"],
+html[data-theme="light"] [style*="color:#E8E8E8"],
+html[data-theme="light"] [style*="color: #e8e8e8"],
+html[data-theme="light"] [style*="color:#e8e8e8"] { color: #555 !important; }
+html[data-theme="light"] [style*="color: #93c5fd"],
+html[data-theme="light"] [style*="color:#93c5fd"] { color: #1d4ed8 !important; }
+
+/* 8. Dark avatar placeholder gradients */
+html[data-theme="light"] [style*="linear-gradient(135deg,#1a1a2e"],
+html[data-theme="light"] [style*="linear-gradient(135deg, #1a1a2e"] {
+  background: linear-gradient(135deg, #E5E5EF, #D0D0E8) !important;
+}
+
+/* 2b. Gradient backgrounds that use rgba(255,255,255) → dark equivalent */
+/* Catches default avatar/tier ring gradients */
+html[data-theme="light"] [style*="linear-gradient(135deg, rgba(255,255,255,0.1"],
+html[data-theme="light"] [style*="linear-gradient(135deg,rgba(255,255,255,0.1"] {
+  background: linear-gradient(135deg, rgba(0,0,0,0.12), rgba(0,0,0,0.06)) !important;
+}
+
+/* 3. Dark translucent glass backgrounds → light equivalent */
+/* Catches 0.03–0.09 range */
+html[data-theme="light"] [style*="background: rgba(255,255,255,0.0"],
+html[data-theme="light"] [style*="background:rgba(255,255,255,0.0"] {
+  background: rgba(0,0,0,0.04) !important;
+}
+/* Catches 0.10–0.19 range */
+html[data-theme="light"] [style*="background: rgba(255,255,255,0.1"],
+html[data-theme="light"] [style*="background:rgba(255,255,255,0.1"] {
+  background: rgba(0,0,0,0.06) !important;
+}
+/* Catches 0.20–0.29 range */
+html[data-theme="light"] [style*="background: rgba(255,255,255,0.2"],
+html[data-theme="light"] [style*="background:rgba(255,255,255,0.2"] {
+  background: rgba(0,0,0,0.09) !important;
+}
+
+/* 3b. Other near-black opaque backgrounds (emoji pickers, menus) */
+html[data-theme="light"] [style*="background: rgba(18,18,24"],
+html[data-theme="light"] [style*="background:rgba(18,18,24"],
+html[data-theme="light"] [style*="background: rgba(20,20,28"],
+html[data-theme="light"] [style*="background:rgba(20,20,28"],
+html[data-theme="light"] [style*="background: rgba(15,15,20"],
+html[data-theme="light"] [style*="background:rgba(15,15,20"] {
+  background: var(--app-modal) !important;
+}
+
+/* 3c. Silver / rgba(232,232,232) backgrounds → light neutral */
+html[data-theme="light"] [style*="background: rgba(232,232,232"],
+html[data-theme="light"] [style*="background:rgba(232,232,232"] {
+  background: rgba(0,0,0,0.06) !important;
+}
+
+/* 4. Hero gradient overlays on auth pages */
+html[data-theme="light"] [style*="linear-gradient(to bottom, rgba(10,10,11"] {
+  background: var(--hero-overlay) !important;
+}
+html[data-theme="light"] [style*="linear-gradient(to bottom,rgba(10,10,11"] {
+  background: var(--hero-overlay) !important;
+}
+
+/* 5. Card photo scrims (hex and rgba variants) */
+html[data-theme="light"] [style*="linear-gradient(to top, #0F0F14"],
+html[data-theme="light"] [style*="linear-gradient(to top,#0F0F14"],
+html[data-theme="light"] [style*="linear-gradient(to top, #0A0A0B"],
+html[data-theme="light"] [style*="linear-gradient(to top,#0A0A0B"],
+html[data-theme="light"] [style*="linear-gradient(to top, rgba(0,0,0,0.7"],
+html[data-theme="light"] [style*="linear-gradient(to top,rgba(0,0,0,0.7"],
+html[data-theme="light"] [style*="linear-gradient(to top, rgba(0,0,0,0.8"],
+html[data-theme="light"] [style*="linear-gradient(to top,rgba(0,0,0,0.8"],
+html[data-theme="light"] [style*="linear-gradient(to top, rgba(0,0,0,0.9"],
+html[data-theme="light"] [style*="linear-gradient(to top,rgba(0,0,0,0.9"] {
+  background: var(--card-scrim-top) !important;
+}
+
+/* 6. Inline border colors using rgba(255,255,255,...) or rgba(232,...) */
+html[data-theme="light"] [style*="solid rgba(255,255,255"],
+html[data-theme="light"] [style*="solid rgba(232,232,232"],
+html[data-theme="light"] [style*="border-color: rgba(255,255,255"],
+html[data-theme="light"] [style*="border-color:rgba(255,255,255"] {
+  border-color: rgba(0,0,0,0.10) !important;
+}
 
 /* ── Action button ambient glow rings ── */
 @keyframes ring-pulse-green {

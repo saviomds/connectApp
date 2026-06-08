@@ -10,8 +10,7 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
   return (
     <motion.div
       key="vibro-splash"
-      className="fixed inset-0 z-[200] flex flex-col items-center justify-center"
-      style={{ background: '#0A0A0B' }}
+      className="fixed inset-0 z-[200] flex flex-col items-center justify-center vibro-splash"
       initial={{ opacity: 1 }}
       exit={{ opacity: 0, scale: 1.04 }}
       transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
