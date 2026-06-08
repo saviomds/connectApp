@@ -11,6 +11,7 @@ interface Props {
 
 export default function TwoFactorSetup({ onStatusChange }: Props) {
   const [loading,    setLoading]    = useState(true)
+  const [supported,  setSupported]  = useState(true)   // false = project has MFA disabled
   const [enabled,    setEnabled]    = useState(false)
   const [factorId,   setFactorId]   = useState<string | null>(null)
   const [open,       setOpen]       = useState(false)
@@ -30,6 +31,23 @@ export default function TwoFactorSetup({ onStatusChange }: Props) {
 
   async function checkStatus() {
     setLoading(true)
+    // Probe whether this project has MFA enabled by attempting a dry enroll.
+    // If the project doesn't support TOTP, enroll returns a specific error code.
+    const probe = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: '__probe__' })
+    if (probe.error) {
+      const msg = probe.error.message ?? ''
+      // "MFA is not enabled" or "not supported" means project-level feature is off
+      if (/not enabled|not supported|disabled/i.test(msg)) {
+        setSupported(false)
+        setLoading(false)
+        return
+      }
+      // Any other error — still supported, just couldn't enroll right now; clean up below
+    } else {
+      // Clean up the probe factor immediately
+      await supabase.auth.mfa.unenroll({ factorId: probe.data.id })
+    }
+
     const { data } = await supabase.auth.mfa.listFactors()
     const totp = data?.totp?.find(f => f.factor_type === 'totp' && f.status === 'verified')
     setEnabled(!!totp)
@@ -93,6 +111,9 @@ export default function TwoFactorSetup({ onStatusChange }: Props) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // Project doesn't have MFA enabled — hide the row entirely
+  if (!loading && !supported) return null
+
   if (loading) {
     return (
       <div className="w-full flex items-center gap-4 px-5 py-4">
@@ -101,7 +122,7 @@ export default function TwoFactorSetup({ onStatusChange }: Props) {
         </span>
         <div className="flex-1">
           <p className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>Two-Factor Authentication</p>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--app-text-3)' }}>Loading…</p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--app-text-3)' }}>Checking…</p>
         </div>
         <Loader2 size={16} className="animate-spin text-white/30 shrink-0" />
       </div>
