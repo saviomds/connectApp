@@ -54,6 +54,7 @@ export default function ProfilePageClient({ displayUser }: { displayUser: Displa
             is_open_to_work: displayUser.is_open_to_work,
             avatar_url:      displayUser.avatar_url,
             photos:          displayUser.photos,
+            prompts:         (displayUser as { prompts?: { question: string; answer: string }[] }).prompts ?? [],
             userId:          displayUser.id,
           }}
           onClose={() => setEditing(false)}

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { X, Plus, Check, Briefcase, MapPin, User, Globe, Link2, CheckCircle, Camera, Loader2, Images, Eye, TrendingUp } from 'lucide-react'
 
+interface IcebreakerPrompt { question: string; answer: string }
+
 interface ProfileData {
   full_name: string
   bio: string
@@ -20,8 +22,22 @@ interface ProfileData {
   is_open_to_work: boolean
   avatar_url: string
   photos: string[]
+  prompts: IcebreakerPrompt[]
   userId: string
 }
+
+const PRESET_QUESTIONS = [
+  "My ideal weekend is…",
+  "The most spontaneous thing I've done…",
+  "A perfect first date looks like…",
+  "My green flag is…",
+  "I'm looking for someone who…",
+  "The best way to win me over…",
+  "I'm passionate about…",
+  "My love language is…",
+  "People would describe me as…",
+  "Fun fact about me…",
+]
 
 const SEXUALITY_OPTIONS = [
   { id: 'straight',          label: 'Straight',          emoji: '💛' },
@@ -50,8 +66,11 @@ interface Props {
 
 export default function ProfileEditor({ initialData, onClose }: Props) {
   const router = useRouter()
-  const [data, setData] = useState(initialData)
+  const [data, setData] = useState({ ...initialData, prompts: initialData.prompts ?? [] })
   const [newInterest, setNewInterest] = useState('')
+  const [promptQuestion, setPromptQuestion] = useState('')
+  const [promptAnswer, setPromptAnswer]     = useState('')
+  const [showPromptForm, setShowPromptForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
@@ -174,6 +193,7 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
           website: data.website || null,
           is_open_to_work: data.is_open_to_work,
           avatar_url: avatarUrl || null,
+          prompts: data.prompts,
         }),
       })
 
@@ -479,6 +499,79 @@ export default function ProfileEditor({ initialData, onClose }: Props) {
                   <Plus size={16} />
                 </button>
               </div>
+            </div>
+
+            {/* Icebreaker Prompts */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">
+                  Icebreakers <span className="normal-case text-white/25 font-normal">({data.prompts.length}/3)</span>
+                </label>
+                {data.prompts.length < 3 && !showPromptForm && (
+                  <button onClick={() => setShowPromptForm(true)}
+                    className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-xl transition-colors"
+                    style={{ background: 'rgba(201,168,76,0.1)', color: '#C9A84C' }}>
+                    <Plus size={12} /> Add
+                  </button>
+                )}
+              </div>
+
+              {/* Existing prompts */}
+              <div className="flex flex-col gap-2 mb-2">
+                {data.prompts.map((p, i) => (
+                  <div key={i} className="rounded-xl p-3 relative group"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <p className="text-[11px] font-semibold mb-1" style={{ color: '#C9A84C' }}>{p.question}</p>
+                    <p className="text-xs text-white/65 leading-relaxed">{p.answer}</p>
+                    <button onClick={() => set('prompts', data.prompts.filter((_, j) => j !== i))}
+                      className="absolute top-2 right-2 w-6 h-6 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ background: 'rgba(231,76,60,0.15)', color: '#E74C3C' }}>
+                      <X size={11} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add prompt form */}
+              {showPromptForm && (
+                <div className="rounded-xl p-3 flex flex-col gap-2"
+                  style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.18)' }}>
+                  <select value={promptQuestion} onChange={e => setPromptQuestion(e.target.value)}
+                    className="w-full h-10 px-3 rounded-xl text-xs"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: promptQuestion ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)' }}>
+                    <option value="">Choose a question…</option>
+                    {PRESET_QUESTIONS.filter(q => !data.prompts.some(p => p.question === q)).map(q => (
+                      <option key={q} value={q}>{q}</option>
+                    ))}
+                  </select>
+                  <textarea value={promptAnswer} onChange={e => setPromptAnswer(e.target.value)}
+                    placeholder="Your answer…" rows={2} maxLength={200}
+                    className="w-full px-3 py-2 rounded-xl text-xs resize-none"
+                    style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.85)' }} />
+                  <div className="flex gap-2">
+                    <button onClick={() => { setShowPromptForm(false); setPromptQuestion(''); setPromptAnswer('') }}
+                      className="flex-1 h-8 rounded-xl text-xs text-white/40 hover:text-white transition-colors"
+                      style={{ background: 'rgba(255,255,255,0.05)' }}>Cancel</button>
+                    <button
+                      disabled={!promptQuestion || !promptAnswer.trim()}
+                      onClick={() => {
+                        if (!promptQuestion || !promptAnswer.trim()) return
+                        set('prompts', [...data.prompts, { question: promptQuestion, answer: promptAnswer.trim() }])
+                        setPromptQuestion(''); setPromptAnswer(''); setShowPromptForm(false)
+                      }}
+                      className="flex-1 h-8 rounded-xl text-xs font-semibold text-black disabled:opacity-40 transition-opacity"
+                      style={{ background: 'linear-gradient(135deg,#C9A84C,#E5C76B)' }}>
+                      Add
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {data.prompts.length === 0 && !showPromptForm && (
+                <p className="text-xs text-white/25 text-center py-3">
+                  Icebreakers spark first messages — add up to 3
+                </p>
+              )}
             </div>
 
             {/* Social links */}

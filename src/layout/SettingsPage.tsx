@@ -13,7 +13,8 @@ import {
   HelpCircle, FileText, ScrollText, Scale, ExternalLink, Phone,
   CheckCircle2,
 } from 'lucide-react';
-import PhoneVerifyModal from '@/components/PhoneVerifyModal';
+import PhoneVerifyModal from '@/components/PhoneVerifyModal'
+import TwoFactorSetup from '@/components/TwoFactorSetup';
 
 interface Prefs {
   notify_matches:        boolean
@@ -398,6 +399,10 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
                 </div>
                 {!phoneVerified && <ChevronRight size={16} className="text-white/30 shrink-0" />}
               </button>
+              {/* 2FA */}
+              <div className="border-b border-white/[0.05]">
+                <TwoFactorSetup />
+              </div>
               {/* Free Tonight */}
               <div className="flex items-center gap-4 px-5 py-4">
                 <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(46,204,113,0.12)' }}>

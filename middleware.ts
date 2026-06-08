@@ -5,6 +5,22 @@ const PROTECTED   = ['/discover', '/matches', '/messages', '/profile', '/setting
 const AUTH_ROUTES = ['/login', '/signup', '/verify', '/forgot-password', '/reset-password']
 const ADMIN_ROUTES = ['/admin']
 
+// ── In-memory sliding-window rate limiter ──────────────────────────
+// Per-isolate (not shared across serverless instances) — good enough for
+// MVP anti-spam. Keys are evicted lazily when the window expires.
+const rlMap = new Map<string, number[]>()
+
+function rateLimit(key: string, limit: number, windowMs: number): boolean {
+  const now = Date.now()
+  const hits = (rlMap.get(key) ?? []).filter(t => now - t < windowMs)
+  if (hits.length >= limit) return false   // over limit
+  hits.push(now)
+  rlMap.set(key, hits)
+  return true                              // allowed
+}
+
+const MSG_PATTERN = /^\/api\/conversations\/[^/]+\/messages$/
+
 // Copy any refreshed Supabase auth cookies into a redirect so tokens are never dropped.
 function redirectWithCookies(url: URL, supabaseResponse: NextResponse): NextResponse {
   const redirect = NextResponse.redirect(url)
@@ -25,6 +41,31 @@ const INVALID_SESSION_CODES = new Set([
 ])
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  const method = request.method
+
+  // ── Rate limiting — runs before auth, applies to API routes only ──
+  if (pathname.startsWith('/api/')) {
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      request.headers.get('x-real-ip') ??
+      'unknown'
+
+    const denied =
+      (method === 'POST' && pathname === '/api/swipes'           && !rateLimit(`${ip}:swipes`,   10, 60_000)) ||
+      (method === 'POST' && MSG_PATTERN.test(pathname)           && !rateLimit(`${ip}:messages`, 30, 60_000)) ||
+      (method === 'POST' && pathname === '/api/reports'          && !rateLimit(`${ip}:reports`,   5, 60_000))
+
+    if (denied) {
+      return new NextResponse(JSON.stringify({ error: 'Too many requests' }), {
+        status: 429,
+        headers: { 'Retry-After': '60', 'Content-Type': 'application/json' },
+      })
+    }
+    // Let all other API calls through without Supabase overhead
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -105,6 +146,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Covers all routes except Next.js internals and static assets.
+    // API routes are included so the rate limiter can intercept them;
+    // auth logic short-circuits before running on API paths.
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

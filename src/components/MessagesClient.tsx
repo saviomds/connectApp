@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Search, BadgeCheck, Crown, MessageCircle, X, Loader2, Filter, PenSquare } from 'lucide-react'
+import { Search, BadgeCheck, Crown, MessageCircle, X, Filter, PenSquare, Loader2 } from 'lucide-react'
+import { MessageRowSkeleton } from '@/components/Skeleton'
 import { createClient } from '@/lib/supabase/client'
 import { AnimatePresence, motion } from 'framer-motion'
 import { clsx } from 'clsx'
@@ -203,8 +204,8 @@ function ComposeSheet({ onClose, existingConvIds, conversations, currentUserId }
         {/* List */}
         <div className="flex-1 overflow-y-auto px-5 pb-6">
           {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 size={20} className="animate-spin text-white/30" />
+            <div className="flex flex-col divide-y divide-white/[0.04]">
+              {Array.from({ length: 6 }).map((_, i) => <MessageRowSkeleton key={i} />)}
             </div>
           ) : matches.length === 0 ? (
             <div className="text-center py-8">

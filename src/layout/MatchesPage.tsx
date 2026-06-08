@@ -27,6 +27,7 @@ interface MatchItem {
   conversationId: string | null
   created_at: string
   expires_at: string | null
+  compatibility: number | null
   profile: ProfileMeta
 }
 
@@ -666,6 +667,16 @@ function MatchCard({ match, onRemove, onExtend }: {
             <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
               <h3 className="text-base font-bold text-white truncate">{p.full_name}</h3>
               {p.is_verified && <BadgeCheck size={14} className="fill-blue-400 text-blue-300 shrink-0" />}
+              {match.compatibility !== null && match.compatibility > 0 && (
+                <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold backdrop-blur-sm shrink-0"
+                  style={{
+                    background: match.compatibility >= 70 ? 'rgba(52,211,153,0.25)' : match.compatibility >= 40 ? 'rgba(201,168,76,0.2)' : 'rgba(255,255,255,0.1)',
+                    color: match.compatibility >= 70 ? '#34D399' : match.compatibility >= 40 ? '#C9A84C' : 'rgba(255,255,255,0.45)',
+                    border: `1px solid ${match.compatibility >= 70 ? 'rgba(52,211,153,0.35)' : match.compatibility >= 40 ? 'rgba(201,168,76,0.3)' : 'rgba(255,255,255,0.12)'}`,
+                  }}>
+                  <Zap size={7} /> {match.compatibility}%
+                </span>
+              )}
             </div>
             <p className="text-white/50 text-xs truncate">{p.profession}{p.company ? ` · ${p.company}` : ''}</p>
             {p.city && (
@@ -702,7 +713,7 @@ function MatchCard({ match, onRemove, onExtend }: {
 }
 
 // ─── Sort options ─────────────────────────────────────────────
-type SortKey = 'newest' | 'online' | 'new_only'
+type SortKey = 'newest' | 'online' | 'new_only' | 'compatibility'
 
 // ─── Page ─────────────────────────────────────────────────────
 export default function MatchesPage({ canSeeProfiles, isPremium, isVerified }: {
@@ -768,9 +779,10 @@ export default function MatchesPage({ canSeeProfiles, isPremium, isVerified }: {
     let list = matches.filter(m =>
       !search.trim() || m.profile.full_name.toLowerCase().includes(search.toLowerCase())
     )
-    if (sort === 'online')   list = list.filter(m => m.profile.is_online)
-    if (sort === 'new_only') list = list.filter(m => !m.conversationId)
-    if (sort === 'newest')   list = [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    if (sort === 'online')        list = list.filter(m => m.profile.is_online)
+    if (sort === 'new_only')      list = list.filter(m => !m.conversationId)
+    if (sort === 'newest')        list = [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    if (sort === 'compatibility') list = [...list].sort((a, b) => (b.compatibility ?? 0) - (a.compatibility ?? 0))
     return list
   }, [matches, sort, search])
 
@@ -779,9 +791,10 @@ export default function MatchesPage({ canSeeProfiles, isPremium, isVerified }: {
   const newMatches     = matches.filter(m => !m.conversationId).length
 
   const SORT_LABELS: Record<SortKey, string> = {
-    newest:   'Newest first',
-    online:   'Online now',
-    new_only: 'Not chatted',
+    newest:        'Newest first',
+    online:        'Online now',
+    new_only:      'Not chatted',
+    compatibility: 'Best match',
   }
 
   return (
