@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Compass, Heart, MessageCircle, User, Crown, Grid2x2 } from 'lucide-react';
+import { Compass, Heart, MessageCircle, User, Crown, Grid2x2, Star, Users } from 'lucide-react';
 import { clsx } from 'clsx';
 import NotificationBell from './NotificationBell';
 
@@ -93,6 +93,17 @@ export default function NavbarClient({ userName, avatarUrl, unreadCount, likedYo
                 </Link>
 
                 <NotificationBell />
+
+                <Link href="/top-picks" title="Top Picks"
+                  className="hidden sm:flex items-center justify-center w-9 h-9 rounded-xl text-white/40 hover:text-white transition-colors"
+                  style={{ background: 'rgba(201,168,76,0.07)', border: '1px solid rgba(201,168,76,0.15)' }}>
+                  <Star size={15} style={{ color: '#C9A84C' }} />
+                </Link>
+                <Link href="/double-date" title="Double Date"
+                  className="hidden sm:flex items-center justify-center w-9 h-9 rounded-xl text-white/40 hover:text-white transition-colors"
+                  style={{ background: 'rgba(232,99,122,0.07)', border: '1px solid rgba(232,99,122,0.15)' }}>
+                  <Users size={15} style={{ color: '#E8637A' }} />
+                </Link>
 
                 <Link
                   href="/premium"

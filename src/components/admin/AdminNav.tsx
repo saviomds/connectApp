@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   BarChart3, Users, ShieldAlert, Settings, Home,
-  ShieldCheck, Heart, MessageCircle, Menu, X, Banknote,
+  ShieldCheck, Heart, MessageCircle, Menu, X, Banknote, Gavel,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useState, useEffect } from 'react'
@@ -16,6 +16,7 @@ const NAV = [
   { href: '/admin/messages',      label: 'Messages',     icon: MessageCircle,   exact: false },
   { href: '/admin/verifications',   label: 'Verify',       icon: ShieldCheck,     exact: false },
   { href: '/admin/reports',        label: 'Reports',      icon: ShieldAlert,     exact: false },
+  { href: '/admin/moderation',     label: 'Moderation',   icon: Gavel,           exact: false },
   { href: '/admin/juice-payments', label: 'Payments',     icon: Banknote,        exact: false },
   { href: '/admin/settings',       label: 'Settings',     icon: Settings,        exact: false },
 ]

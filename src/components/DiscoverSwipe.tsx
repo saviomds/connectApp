@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { DbProfile } from '@/types/database';
 import SplashScreen from './SplashScreen';
+import SwipeTutorial from './SwipeTutorial';
 
 const SWIPE_THRESHOLD = 80;
 const FLY_DISTANCE    = 600;
@@ -953,6 +954,9 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
             setIsInitializing(false)
           }} />
         )}
+      </AnimatePresence>
+      <SwipeTutorial />
+      <AnimatePresence>
       </AnimatePresence>
 
       {/* Header */}

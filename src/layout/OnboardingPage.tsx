@@ -57,6 +57,8 @@ export default function OnboardingPage() {
     window.location.href = url;
   }
 
+  const [done, setDone] = useState(false);
+
   const handleSubmit = async () => {
     setError('');
     setLoading(true);
@@ -75,9 +77,33 @@ export default function OnboardingPage() {
       return;
     }
 
-    router.push('/discover');
-    router.refresh();
+    setDone(true);
   };
+
+  if (done) return (
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="fixed inset-0 -z-10">
+        <Image src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=1600&q=80" alt="" fill className="object-cover opacity-10" />
+        <div className="absolute inset-0 hero-overlay" />
+      </div>
+      <div className="w-full max-w-md text-center">
+        <div className="text-7xl mb-6 animate-bounce select-none">🎉</div>
+        <h1 className="text-3xl font-bold text-white mb-3">You&apos;re all set!</h1>
+        <p className="text-white/60 text-base mb-2">Your profile is live and ready.</p>
+        <p className="text-white/40 text-sm mb-8">Start discovering people who match your vibe — swipe, connect, and grow.</p>
+        <div className="flex flex-col gap-3">
+          <a href="/discover"
+            className="btn-gold h-13 px-8 py-3 rounded-2xl font-bold text-black text-lg flex items-center justify-center gap-2"
+            style={{ fontSize: '1.05rem' }}>
+            Start Discovering ✨
+          </a>
+          <a href="/profile" className="text-sm text-white/40 hover:text-white transition-colors">
+            Review my profile first →
+          </a>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8">

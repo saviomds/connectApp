@@ -12,6 +12,7 @@ import SessionGuard from '@/components/SessionGuard'
 import ThemeScript from '@/components/ThemeScript'
 import AppSplash from '@/components/AppSplash'
 import CookieBanner from '@/components/CookieBanner'
+import SuspensionBanner from '@/components/SuspensionBanner'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
 
@@ -76,6 +77,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ServiceWorkerRegistrar />
         {user && <PushPrompt />}
         <CookieBanner />
+        {user && <SuspensionBanner />}
         {children}
       </body>
     </html>

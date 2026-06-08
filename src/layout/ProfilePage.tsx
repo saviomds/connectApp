@@ -11,6 +11,7 @@ import { redirect } from 'next/navigation'
 import ProfilePageClient from '@/components/ProfilePageClient'
 import BadgesPanel from '@/components/BadgesPanel'
 import ShareProfileButton from '@/components/ShareProfileButton'
+import ViewersSection from '@/components/ViewersSection'
 import type { DbProfile } from '@/types/database'
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string; bg: string }> = {
@@ -370,6 +371,9 @@ export default async function ProfilePage() {
                 </div>
               )}
             </div>
+
+            {/* Who viewed me */}
+            <ViewersSection isPremium={p.is_premium} />
 
             {/* Badges & Membership */}
             <BadgesPanel
