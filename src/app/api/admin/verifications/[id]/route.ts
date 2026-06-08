@@ -2,6 +2,7 @@ import { getAdminUser } from '@/lib/admin'
 import { createClient } from '@/lib/supabase/server'
 import { adminSupabase } from '@/lib/supabase/admin'
 import { sendPushToUser } from '@/lib/send-push'
+import { sendVerificationEmail } from '@/lib/send-email'
 
 export async function PATCH(
   request: Request,
@@ -73,6 +74,7 @@ export async function PATCH(
       body:  'Your profile has been verified! You now have Level 3 access.',
       url:   '/profile',
     }).catch(() => {})
+    sendVerificationEmail(req.user_id, true).catch(() => {})
   } else {
     await supabase
       .from('profiles')
@@ -89,6 +91,7 @@ export async function PATCH(
       body:  note ? `Your verification was not approved: ${note}` : 'Your verification request was not approved.',
       url:   '/profile',
     }).catch(() => {})
+    sendVerificationEmail(req.user_id, false, note).catch(() => {})
   }
 
   return Response.json({ ok: true, status: newStatus })

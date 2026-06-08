@@ -803,7 +803,11 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
   const [swiped, setSwiped]             = useState<Set<string>>(new Set());
   const [fetching, setFetching]         = useState(false);
   const [expandedProfile, setExpandedProfile] = useState<DbProfile | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const done = sessionStorage.getItem('vibro_splash_done')
+    return !done
+  });
 
   // Limits
   const [remainingSwipes, setRemainingSwipes]         = useState<number | null>(null);
@@ -945,7 +949,10 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
     <div className="h-dvh flex flex-col pt-nav-flush pb-14 md:pb-0 overflow-hidden relative">
       <AnimatePresence>
         {isInitializing && (
-          <SplashScreen onComplete={() => setIsInitializing(false)} />
+          <SplashScreen onComplete={() => {
+            sessionStorage.setItem('vibro_splash_done', '1')
+            setIsInitializing(false)
+          }} />
         )}
       </AnimatePresence>
 

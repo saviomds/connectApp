@@ -4,13 +4,16 @@ import { useState, useEffect, useCallback } from 'react';
 import type React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import {
   ArrowLeft, Lock, Bell, Shield, Trash2, LogOut,
   ChevronRight, Eye, EyeOff, CheckCircle, ShieldCheck, Loader2,
   Sun, Moon, MapPin, Users, Zap, BookOpen,
   HelpCircle, FileText, ScrollText, Scale, ExternalLink, Phone,
+  CheckCircle2,
 } from 'lucide-react';
+import PhoneVerifyModal from '@/components/PhoneVerifyModal';
 
 interface Prefs {
   notify_matches:        boolean
@@ -67,6 +70,10 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
   const [locationCity, setLocationCity]       = useState('');
   const [locationCountry, setLocationCountry] = useState('');
 
+  const [phoneVerified, setPhoneVerified]     = useState(false);
+  const [userPhone, setUserPhone]             = useState('');
+  const [showPhoneVerify, setShowPhoneVerify] = useState(false);
+
   useEffect(() => {
     fetch('/api/settings/preferences')
       .then(r => r.ok ? r.json() : null)
@@ -79,6 +86,23 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
         }
       })
       .catch(() => { setPrefsLoaded(true); });
+
+    // Load phone verification status
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from('profiles')
+        .select('phone, phone_verified')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            setPhoneVerified(!!data.phone_verified);
+            setUserPhone(data.phone ?? '');
+          }
+        });
+    });
   }, []);
 
   async function togglePref(key: keyof Prefs) {
@@ -306,6 +330,39 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
                   <p className="text-xs text-white/35 mt-0.5">Update your account password</p>
                 </div>
                 <ChevronRight size={16} className="text-white/30 shrink-0" />
+              </button>
+
+              {/* Mauritius phone verification */}
+              <button
+                onClick={() => { if (!phoneVerified) setShowPhoneVerify(true) }}
+                disabled={phoneVerified}
+                className="w-full flex items-center gap-4 px-5 py-4 hover:bg-white/[0.03] transition-colors border-b border-white/[0.05] disabled:cursor-default"
+              >
+                <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  style={phoneVerified
+                    ? { background: 'rgba(46,204,113,0.12)', border: '1px solid rgba(46,204,113,0.25)' }
+                    : { background: 'rgba(201,168,76,0.10)', border: '1px solid rgba(201,168,76,0.20)' }}>
+                  {phoneVerified
+                    ? <CheckCircle2 size={16} style={{ color: '#2ECC71' }} />
+                    : <Phone size={16} style={{ color: '#C9A84C' }} />}
+                </span>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-white">
+                    Mauritius Phone Verification
+                    {phoneVerified && (
+                      <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                        style={{ background: 'rgba(46,204,113,0.15)', color: '#2ECC71' }}>
+                        Verified
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xs text-white/35 mt-0.5">
+                    {phoneVerified
+                      ? `Verified: ${userPhone}`
+                      : 'Confirm your +230 number to prove you\'re from Mauritius'}
+                  </p>
+                </div>
+                {!phoneVerified && <ChevronRight size={16} className="text-white/30 shrink-0" />}
               </button>
               {/* Free Tonight */}
               <div className="flex items-center gap-4 px-5 py-4">
@@ -542,6 +599,19 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
           <p className="text-center text-xs text-white/20 pb-2">Vibro v1.0 · Part of Match Group</p>
         </div>
       </div>
+
+      {/* Phone verification modal */}
+      <AnimatePresence>
+        {showPhoneVerify && (
+          <PhoneVerifyModal
+            onClose={() => setShowPhoneVerify(false)}
+            onVerified={(phone) => {
+              setPhoneVerified(true);
+              setUserPhone(phone);
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

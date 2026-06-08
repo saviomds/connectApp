@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { sendPushToUser } from '@/lib/send-push'
+import { sendMessageEmail } from '@/lib/send-email'
 
 const FREE_DAILY_MSG_LIMIT = 20
 
@@ -186,11 +187,13 @@ export async function POST(
     ;(async () => {
       try {
         const { data: sender } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
+        const senderName = sender?.full_name ?? 'Someone'
         await sendPushToUser(recipientId, {
-          title: sender?.full_name ?? 'Someone',
+          title: senderName,
           body:  preview,
           url:   `/messages/${postConvId}`,
         })
+        sendMessageEmail(recipientId, senderName, preview, postConvId).catch(() => {})
       } catch { /* non-critical */ }
     })()
   }

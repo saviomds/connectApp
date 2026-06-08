@@ -11,7 +11,7 @@ import {
   Play, Pause, SmilePlus, Pencil,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { playMessageSound } from '@/lib/message-sound'
+import { playMessageSound, unlockAudio } from '@/lib/message-sound'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 type MsgType = 'text' | 'image' | 'album' | 'view_once' | 'voice'
@@ -640,6 +640,7 @@ export default function ChatPage({ params }: { params: Promise<{ id: string }> }
   }
 
   function handleInputChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    unlockAudio()
     setInput(e.target.value)
     if (!isTypingRef.current) { isTypingRef.current = true; broadcastTyping(true) }
     clearTimeout(typingTimeout.current)

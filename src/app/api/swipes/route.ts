@@ -1,9 +1,58 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { sendPushToUser } from '@/lib/send-push'
+import { sendMatchEmail, sendSuperLikeEmail } from '@/lib/send-email'
 
 const FREE_DAILY_LIMIT       = 10
 const FREE_SUPER_DAILY_LIMIT  = 1
 const GOLD_SUPER_DAILY_LIMIT  = 5
+
+async function notifySwipeEvents(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  swiperId: string,
+  targetId: string,
+  direction: string,
+  matched: boolean,
+) {
+  // Fire-and-forget — never block the swipe response
+  ;(async () => {
+    try {
+      const { data: swiper } = await supabase
+        .from('profiles').select('full_name').eq('id', swiperId).single()
+      const swiperName = swiper?.full_name ?? 'Someone'
+
+      if (direction === 'super_like') {
+        // Push + in-app notification for super like
+        await supabase.from('notifications').insert({
+          user_id: targetId,
+          type:    'super_like',
+          data:    { from_user_id: swiperId, from_name: swiperName },
+        })
+        sendPushToUser(targetId, {
+          title: '⭐ Super Like!',
+          body:  `${swiperName} thinks you're exceptional!`,
+          url:   '/discover',
+        }).catch(() => {})
+        sendSuperLikeEmail(targetId, swiperName).catch(() => {})
+      }
+
+      if (matched) {
+        // Push + in-app notification for match (notify the other user)
+        await supabase.from('notifications').insert({
+          user_id: targetId,
+          type:    'match',
+          data:    { matched_with_id: swiperId, matched_with_name: swiperName },
+        })
+        sendPushToUser(targetId, {
+          title: '🎉 It\'s a Match!',
+          body:  `You and ${swiperName} liked each other!`,
+          url:   '/matches',
+        }).catch(() => {})
+        sendMatchEmail(targetId, swiperName).catch(() => {})
+      }
+    } catch { /* non-critical */ }
+  })()
+}
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -90,9 +139,12 @@ export async function POST(request: Request) {
       .gte('created_at', todayISO)
     const remainingSuperLikes = Math.max(0, FREE_SUPER_DAILY_LIMIT - (superUsed ?? 0))
 
+    const didMatch = !!matchData
+    notifySwipeEvents(supabase, user.id, target_id, direction, didMatch)
+
     return Response.json({
       swipe: data,
-      matched: !!matchData,
+      matched: didMatch,
       remainingSwipes: remainingAfter,
       remainingSuperLikes,
       limitReached: remainingAfter <= 0,
@@ -126,6 +178,8 @@ export async function POST(request: Request) {
       .gte('created_at', todayISO)
     remainingSuperLikes = Math.max(0, GOLD_SUPER_DAILY_LIMIT - (superUsed ?? 0))
   }
+
+  notifySwipeEvents(supabase, user.id, target_id, direction, matched)
 
   return Response.json({
     swipe: data,

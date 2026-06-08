@@ -48,6 +48,9 @@ export interface DbProfile {
   user_level: 1 | 2 | 3
   /** Additional levels this premium user has unlocked for discovery */
   unlocked_levels: number[]
+  phone: string | null
+  phone_verified: boolean
+  is_from_mauritius: boolean
   created_at: string
   updated_at: string
 }
