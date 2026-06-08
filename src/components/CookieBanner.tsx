@@ -28,15 +28,21 @@ export default function CookieBanner() {
   return (
     <div
       className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-50 rounded-2xl p-4 shadow-2xl"
-      style={{ background: 'rgba(18,18,22,0.97)', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(20px)' }}
+      style={{
+        background: 'var(--app-modal)',
+        border: '1px solid var(--app-border)',
+        backdropFilter: 'blur(20px)',
+      }}
       role="dialog"
       aria-label="Cookie consent"
     >
-      <p className="text-sm font-semibold text-white mb-1">We use cookies</p>
-      <p className="text-xs text-white/50 leading-relaxed mb-4">
+      <p className="text-sm font-semibold mb-1" style={{ color: 'var(--app-text)' }}>
+        We use cookies
+      </p>
+      <p className="text-xs leading-relaxed mb-4" style={{ color: 'var(--app-text-3)' }}>
         We use essential cookies to keep you logged in and analytics cookies to
         improve the experience. See our{' '}
-        <Link href="/privacy" className="underline text-white/60 hover:text-white">
+        <Link href="/privacy" className="underline hover:opacity-80" style={{ color: 'var(--app-text-2)' }}>
           Privacy Policy
         </Link>{' '}
         for details.
@@ -44,8 +50,12 @@ export default function CookieBanner() {
       <div className="flex gap-2">
         <button
           onClick={decline}
-          className="flex-1 h-9 rounded-xl text-xs font-medium text-white/40 hover:text-white transition-colors"
-          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+          className="flex-1 h-9 rounded-xl text-xs font-medium transition-opacity hover:opacity-70"
+          style={{
+            background: 'var(--app-surface)',
+            border: '1px solid var(--app-border)',
+            color: 'var(--app-text-3)',
+          }}
         >
           Decline
         </button>
