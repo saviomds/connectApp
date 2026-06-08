@@ -1,16 +1,10 @@
 import 'server-only'
 import { createClient } from '@supabase/supabase-js'
 
-// Uses the service role key — bypasses RLS, never expose to the client.
-// Cached as a module-level singleton so the same client is reused across
-// requests. Creating a fresh client per property access was leaving dangling
-// internal streams on GC, triggering Node.js TransformStream errors.
-// Still throws at first use (not import time) so local dev starts without
-// SUPABASE_SERVICE_ROLE_KEY when admin features aren't needed.
-let _client: ReturnType<typeof createClient> | null = null
-
-function getAdminClient() {
-  if (_client) return _client
+// Non-generic wrapper so ReturnType<> captures the exact SupabaseClient<any,'public',any>
+// inferred from the concrete createClient(url, key, opts) call — not the wider
+// SupabaseClient<any, string, any> you'd get from ReturnType<typeof createClient>.
+function createAdminClient() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!serviceKey) {
     throw new Error(
@@ -18,12 +12,21 @@ function getAdminClient() {
       'Add it to .env.local to enable admin features (account deletion, webhook handlers).'
     )
   }
-  _client = createClient(
+  return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     serviceKey,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
-  return _client
+}
+
+// Cached as a module-level singleton — reused across requests so the same
+// client's internal streams are never left dangling for GC, which was
+// triggering Node.js TransformStream errors on every admin page load.
+let _client: ReturnType<typeof createAdminClient> | null = null
+
+function getAdminClient() {
+  if (!_client) _client = createAdminClient()
+  return _client!
 }
 
 export const adminSupabase = new Proxy({} as ReturnType<typeof getAdminClient>, {

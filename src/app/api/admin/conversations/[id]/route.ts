@@ -20,12 +20,14 @@ export async function GET(
 
   const { id } = await params
 
+  type ConvRow = { id: string; match_id: string; created_at: string; updated_at: string }
+
   // Verify conversation exists and get match participants
-  const { data: conv, error: convError } = await adminSupabase
+  const { data: conv, error: convError } = await (adminSupabase
     .from('conversations')
     .select('id, match_id, created_at, updated_at')
     .eq('id', id)
-    .single()
+    .single() as unknown as Promise<{ data: ConvRow | null; error: unknown }>)
 
   if (convError || !conv) return Response.json({ error: 'Conversation not found' }, { status: 404 })
 

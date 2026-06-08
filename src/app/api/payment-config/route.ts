@@ -2,15 +2,18 @@ import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
-let _anonClient: ReturnType<typeof createClient> | null = null
-function anonClient() {
-  if (_anonClient) return _anonClient
-  _anonClient = createClient(
+function createAnonClient() {
+  return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
-  return _anonClient
+}
+
+let _anonClient: ReturnType<typeof createAnonClient> | null = null
+function anonClient() {
+  if (!_anonClient) _anonClient = createAnonClient()
+  return _anonClient!
 }
 
 const FALLBACK = {
