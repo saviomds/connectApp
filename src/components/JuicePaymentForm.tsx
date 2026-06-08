@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { DragEvent } from 'react'
+import Link from 'next/link'
 import {
   ArrowLeft, Upload, CheckCircle, Copy, Check,
   Smartphone, X, Loader2, Image as ImageIcon,
@@ -151,11 +152,19 @@ export default function JuicePaymentForm({ planId, billing, juiceConfig, onSucce
             <li>• Your {plan.name} benefits activate immediately on approval</li>
           </ul>
         </div>
-        <button onClick={onSuccess}
-          className="h-11 px-8 rounded-2xl font-semibold text-sm text-black"
-          style={{ background: colors.text }}>
-          Back to Plans
-        </button>
+        <div className="flex flex-col items-center gap-3 w-full">
+          <button onClick={onSuccess}
+            className="h-11 px-8 rounded-2xl font-semibold text-sm text-black w-full max-w-xs"
+            style={{ background: colors.text }}>
+            Back to Plans
+          </button>
+          <Link
+            href="/my-payments"
+            className="text-sm text-white/40 hover:text-white transition-colors"
+          >
+            Track payment status →
+          </Link>
+        </div>
       </div>
     )
   }

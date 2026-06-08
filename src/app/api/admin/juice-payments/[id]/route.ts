@@ -86,8 +86,8 @@ export async function PATCH(
 
     sendPushToUser(submission.user_id, {
       title: 'Payment Verification Update',
-      body: admin_notes || 'Your payment proof was not approved. Please resubmit or contact support.',
-      url: '/premium',
+      body: admin_notes || 'Your payment proof was not approved. Tap to see details and resubmit.',
+      url: '/my-payments',
     }).catch(() => {})
   }
 
