@@ -138,8 +138,8 @@ function ComposeSheet({ onClose, existingConvIds, conversations, currentUserId }
           )}
           <TierRing tier={m.profile.premium_tier ?? null} />
           {m.profile.is_online && (
-            <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0A0A0B]"
-              style={{ background: '#2ECC71' }} />
+            <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2"
+              style={{ background: '#2ECC71', borderColor: 'var(--app-bg)' }} />
           )}
         </div>
         <div className="flex-1 min-w-0">
@@ -173,8 +173,8 @@ function ComposeSheet({ onClose, existingConvIds, conversations, currentUserId }
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
       <motion.div
-        className="relative w-full sm:max-w-sm overflow-hidden rounded-t-3xl sm:rounded-3xl"
-        style={{ background: '#111114', border: '1px solid rgba(255,255,255,0.08)', maxHeight: '85dvh', display: 'flex', flexDirection: 'column' }}
+        className="relative w-full sm:max-w-sm modal overflow-hidden rounded-t-3xl sm:rounded-3xl"
+        style={{ maxHeight: '85dvh', display: 'flex', flexDirection: 'column' }}
         initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
         transition={{ type: 'spring', damping: 28, stiffness: 300 }}
         onClick={e => e.stopPropagation()}>
@@ -197,7 +197,7 @@ function ComposeSheet({ onClose, existingConvIds, conversations, currentUserId }
           <input value={query} onChange={e => setQuery(e.target.value)}
             placeholder="Search matches…" autoFocus
             className="w-full h-10 pl-8 pr-4 rounded-xl text-sm text-white placeholder-white/25 outline-none"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)' }} />
+            style={{ background: 'var(--app-input-bg)', border: '1px solid var(--app-input-border)' }} />
         </div>
 
         {/* List */}
@@ -364,16 +364,16 @@ export default function MessagesClient({ currentUserId, initialConversations }: 
               onChange={e => setQuery(e.target.value)}
               placeholder="Search conversations…"
               className="w-full h-11 pl-9 pr-4 rounded-xl text-white placeholder-white/25 text-sm outline-none"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.09)' }}
+              style={{ background: 'var(--app-input-bg)', border: '1px solid var(--app-input-border)' }}
             />
           </div>
           <button
             onClick={() => setUnreadOnly(v => !v)}
             className="h-11 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shrink-0 transition-all"
             style={{
-              background: unreadOnly ? 'rgba(201,168,76,0.15)' : 'rgba(255,255,255,0.06)',
-              border: `1px solid ${unreadOnly ? 'rgba(201,168,76,0.4)' : 'rgba(255,255,255,0.09)'}`,
-              color: unreadOnly ? '#C9A84C' : 'rgba(255,255,255,0.5)',
+              background: unreadOnly ? 'rgba(201,168,76,0.15)' : 'var(--app-input-bg)',
+              border: `1px solid ${unreadOnly ? 'rgba(201,168,76,0.4)' : 'var(--app-input-border)'}`,
+              color: unreadOnly ? '#C9A84C' : 'var(--app-text-3)',
             }}>
             <Filter size={13} />
             Unread
@@ -427,8 +427,8 @@ export default function MessagesClient({ currentUserId, initialConversations }: 
                     )}
                     <TierRing tier={p.premium_tier} />
                     {p.is_online && (
-                      <div className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full border-2 border-[#0A0A0B]"
-                        style={{ background: '#2ECC71' }} />
+                      <div className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full border-2"
+                        style={{ background: '#2ECC71', borderColor: 'var(--app-bg)' }} />
                     )}
                     <UnreadBadge count={conv.unread_count} />
                   </div>

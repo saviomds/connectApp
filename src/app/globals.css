@@ -479,17 +479,22 @@ html[data-theme="light"] [style*="color: #FFFFFF"] {
   color: #1A1A1E !important;
 }
 
-/* 2. Inline dark backgrounds → theme surface */
+/* 2. Inline dark backgrounds → theme surface
+   Two forms: hex (SSR/static) + rgb() (browser-normalized, CSR/dynamic) */
 html[data-theme="light"] [style*="background: #0A0A0B"],
 html[data-theme="light"] [style*="background:#0A0A0B"],
 html[data-theme="light"] [style*="background-color: #0A0A0B"],
-html[data-theme="light"] [style*="background-color:#0A0A0B"] {
+html[data-theme="light"] [style*="background-color:#0A0A0B"],
+html[data-theme="light"] [style*="background: rgb(10, 10, 11"],
+html[data-theme="light"] [style*="background:rgb(10, 10, 11"] {
   background: var(--app-bg) !important;
 }
 html[data-theme="light"] [style*="background: #0F0F14"],
 html[data-theme="light"] [style*="background:#0F0F14"],
 html[data-theme="light"] [style*="background-color: #0F0F14"],
-html[data-theme="light"] [style*="background-color:#0F0F14"] {
+html[data-theme="light"] [style*="background-color:#0F0F14"],
+html[data-theme="light"] [style*="background: rgb(15, 15, 20"],
+html[data-theme="light"] [style*="background:rgb(15, 15, 20"] {
   background: var(--app-modal) !important;
 }
 html[data-theme="light"] [style*="background: #111114"],
@@ -497,7 +502,13 @@ html[data-theme="light"] [style*="background:#111114"],
 html[data-theme="light"] [style*="background: #111118"],
 html[data-theme="light"] [style*="background:#111118"],
 html[data-theme="light"] [style*="background: #111116"],
-html[data-theme="light"] [style*="background:#111116"] {
+html[data-theme="light"] [style*="background:#111116"],
+html[data-theme="light"] [style*="background: rgb(17, 17, 20"],
+html[data-theme="light"] [style*="background:rgb(17, 17, 20"],
+html[data-theme="light"] [style*="background: rgb(17, 17, 24"],
+html[data-theme="light"] [style*="background:rgb(17, 17, 24"],
+html[data-theme="light"] [style*="background: rgb(17, 17, 22"],
+html[data-theme="light"] [style*="background:rgb(17, 17, 22"] {
   background: var(--app-modal) !important;
 }
 html[data-theme="light"] [style*="background: #1A1A24"],
@@ -507,7 +518,19 @@ html[data-theme="light"] [style*="background:#1C1C26"],
 html[data-theme="light"] [style*="background: #16161A"],
 html[data-theme="light"] [style*="background:#16161A"],
 html[data-theme="light"] [style*="background: #1A1A1F"],
-html[data-theme="light"] [style*="background:#1A1A1F"] {
+html[data-theme="light"] [style*="background:#1A1A1F"],
+html[data-theme="light"] [style*="background: #13131A"],
+html[data-theme="light"] [style*="background:#13131A"],
+html[data-theme="light"] [style*="background: rgb(26, 26, 36"],
+html[data-theme="light"] [style*="background:rgb(26, 26, 36"],
+html[data-theme="light"] [style*="background: rgb(28, 28, 38"],
+html[data-theme="light"] [style*="background:rgb(28, 28, 38"],
+html[data-theme="light"] [style*="background: rgb(22, 22, 26"],
+html[data-theme="light"] [style*="background:rgb(22, 22, 26"],
+html[data-theme="light"] [style*="background: rgb(26, 26, 31"],
+html[data-theme="light"] [style*="background:rgb(26, 26, 31"],
+html[data-theme="light"] [style*="background: rgb(19, 19, 26"],
+html[data-theme="light"] [style*="background:rgb(19, 19, 26"] {
   background: var(--app-modal) !important;
 }
 

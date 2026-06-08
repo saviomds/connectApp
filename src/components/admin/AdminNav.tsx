@@ -58,7 +58,7 @@ export default function AdminNav({ email }: { email: string }) {
       {/* ── Desktop sidebar ─────────────────────────────────── */}
       <aside
         className="hidden md:flex flex-col w-56 shrink-0 fixed top-16 bottom-0 left-0 z-40 px-3 py-5"
-        style={{ background: '#13131A', borderRight: '1px solid rgba(255,255,255,0.07)' }}
+        style={{ background: 'var(--app-modal)', borderRight: '1px solid var(--app-border)' }}
       >
         <div className="flex items-center gap-2 px-3 mb-5">
           <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse shrink-0" />
@@ -81,7 +81,7 @@ export default function AdminNav({ email }: { email: string }) {
       {/* ── Mobile top bar with hamburger ───────────────────── */}
       <div
         className="md:hidden fixed top-16 left-0 right-0 z-40 flex items-center justify-between px-4 py-3"
-        style={{ background: '#13131A', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+        style={{ background: 'var(--app-modal)', borderBottom: '1px solid var(--app-border)' }}
       >
         <div className="flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
@@ -111,7 +111,7 @@ export default function AdminNav({ email }: { email: string }) {
           'md:hidden fixed top-0 right-0 bottom-0 z-50 w-72 flex flex-col py-6 px-4 transition-transform duration-300',
           open ? 'translate-x-0' : 'translate-x-full'
         )}
-        style={{ background: '#13131A', borderLeft: '1px solid rgba(255,255,255,0.07)' }}
+        style={{ background: 'var(--app-modal)', borderLeft: '1px solid var(--app-border)' }}
       >
         {/* Drawer header */}
         <div className="flex items-center justify-between mb-6 px-1">
