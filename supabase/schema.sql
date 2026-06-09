@@ -395,6 +395,7 @@ CREATE POLICY "messages: own update (mark seen)" ON messages
 -- ── notifications policies ───────────────────────────────────
 DROP POLICY IF EXISTS "notifications: own read"   ON notifications;
 DROP POLICY IF EXISTS "notifications: own update" ON notifications;
+DROP POLICY IF EXISTS "notifications: own delete" ON notifications;
 
 -- ── blocks policies ──────────────────────────────────────────
 DROP POLICY IF EXISTS "blocks: own read"   ON blocks;
@@ -411,6 +412,7 @@ CREATE POLICY "blocks: own delete" ON blocks FOR DELETE USING (blocker_id = auth
 
 CREATE POLICY "notifications: own read"   ON notifications FOR SELECT USING (user_id = auth.uid() OR is_admin());
 CREATE POLICY "notifications: own update" ON notifications FOR UPDATE USING (user_id = auth.uid());
+CREATE POLICY "notifications: own delete" ON notifications FOR DELETE USING (user_id = auth.uid());
 
 -- ── storage policies ─────────────────────────────────────────
 DROP POLICY IF EXISTS "avatars: public read"          ON storage.objects;

@@ -11,8 +11,9 @@ import {
   ChevronRight, Eye, EyeOff, CheckCircle, ShieldCheck, Loader2,
   Sun, Moon, MapPin, Users, Zap, BookOpen, Sparkles, Download,
   HelpCircle, FileText, ScrollText, Scale, ExternalLink, Phone,
-  CheckCircle2,
+  CheckCircle2, Globe,
 } from 'lucide-react';
+import { computeUserLevel, canUnlockLevel, type UserLevel } from '@/lib/discovery-levels';
 import PhoneVerifyModal from '@/components/PhoneVerifyModal'
 import TwoFactorSetup from '@/components/TwoFactorSetup';
 
@@ -89,6 +90,11 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
   const [userPhone, setUserPhone]             = useState('');
   const [showPhoneVerify, setShowPhoneVerify] = useState(false);
 
+  const [myLevel, setMyLevel]               = useState<UserLevel | null>(null);
+  const [isPremium, setIsPremium]           = useState(false);
+  const [unlockedLevels, setUnlockedLevels] = useState<number[]>([]);
+  const [unlockingLevel, setUnlockingLevel] = useState<number | null>(null);
+
   useEffect(() => {
     fetch('/api/settings/preferences')
       .then(r => r.ok ? r.json() : null)
@@ -102,19 +108,22 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
       })
       .catch(() => { setPrefsLoaded(true); });
 
-    // Load phone verification status
+    // Load phone verification status and level/premium data
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
       supabase
         .from('profiles')
-        .select('phone, phone_verified')
+        .select('phone, phone_verified, is_premium, is_verified, is_professional, category, unlocked_levels')
         .eq('id', user.id)
         .single()
         .then(({ data }) => {
           if (data) {
             setPhoneVerified(!!data.phone_verified);
             setUserPhone(data.phone ?? '');
+            setIsPremium(!!data.is_premium);
+            setUnlockedLevels(data.unlocked_levels ?? []);
+            setMyLevel(computeUserLevel(data as Parameters<typeof computeUserLevel>[0]));
           }
         });
     });
@@ -204,6 +213,21 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
     router.push('/login')
   };
+
+  async function toggleLevelUnlock(targetLevel: UserLevel) {
+    const isCurrentlyUnlocked = unlockedLevels.includes(targetLevel);
+    setUnlockingLevel(targetLevel);
+    const res = await fetch('/api/discovery/unlock-level', {
+      method: isCurrentlyUnlocked ? 'DELETE' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_level: targetLevel }),
+    });
+    if (res.ok) {
+      const d = await res.json();
+      setUnlockedLevels(d.unlocked_levels ?? []);
+    }
+    setUnlockingLevel(null);
+  }
 
   // ── Toggle component ──────────────────────────────────────────
   function Toggle({ prefKey }: { prefKey: keyof Prefs }) {
@@ -592,6 +616,49 @@ export default function SettingsPage({ isAdmin = false }: { isAdmin?: boolean })
                   ))}
                 </div>
               </div>
+              {/* Cross-level discovery (premium Level 2 / 3 only) */}
+              {myLevel && myLevel !== 1 && isPremium && (
+                <div className="px-5 py-4">
+                  <div className="flex items-center gap-4 mb-3">
+                    <span className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: 'rgba(155,109,255,0.12)' }}>
+                      <Globe size={16} style={{ color: '#9B6DFF' }} />
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-white">Cross-Level Discovery</p>
+                      <p className="text-xs text-white/35 mt-0.5">See profiles from other verification levels</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {([1, 2, 3] as UserLevel[])
+                      .filter(l => l !== myLevel && canUnlockLevel(myLevel!, true, l))
+                      .map(level => {
+                        const labels: Record<UserLevel, string> = { 1: 'Youth', 2: 'Professional', 3: 'Verified' };
+                        const colors: Record<UserLevel, string> = { 1: '#2ECC71', 2: '#4A90E2', 3: '#9B6DFF' };
+                        const isUnlocked = unlockedLevels.includes(level);
+                        return (
+                          <div key={level} className="flex items-center justify-between rounded-xl px-3 py-2.5"
+                            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: colors[level] }} />
+                              <span className="text-sm text-white/70">Level {level} — {labels[level]}</span>
+                            </div>
+                            <button
+                              onClick={() => toggleLevelUnlock(level)}
+                              disabled={unlockingLevel === level}
+                              className="relative w-11 h-6 rounded-full transition-all duration-300 disabled:opacity-50 shrink-0"
+                              style={{ background: isUnlocked ? '#9B6DFF' : 'rgba(255,255,255,0.1)' }}>
+                              {unlockingLevel === level
+                                ? <Loader2 size={10} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin text-white/60" />
+                                : <span className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-300"
+                                    style={{ left: isUnlocked ? '1.375rem' : '0.125rem' }} />}
+                            </button>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
