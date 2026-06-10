@@ -41,13 +41,24 @@ export async function createClient() {
  */
 export const getCachedUser = cache(async () => {
   try {
+    const cookieStore = await cookies()
+    // Skip the Supabase client entirely when no auth cookie exists.
+    // This avoids a race condition inside @supabase/auth-js where the
+    // internal _emitInitialSession() background task wins the lock before
+    // getUser(), tries to refresh a stale token, and logs console.error
+    // before we can intercept it.  The middleware always clears auth cookies
+    // when it detects a definitively invalid session, so an absent/empty
+    // cookie here means the user is logged out.
+    const hasAuthCookie = cookieStore.getAll().some(
+      ({ name, value }) => /^sb-.+-auth-token(\.0)?$/.test(name) && value,
+    )
+    if (!hasAuthCookie) return null
+
     const supabase = await createClient()
     const { data: { user }, error } = await supabase.auth.getUser()
     if (error) return null
     return user
   } catch {
-    // Stale/revoked refresh token — middleware will clear cookies on the response.
-    // Return null so the layout renders as logged-out for this request.
     return null
   }
 })

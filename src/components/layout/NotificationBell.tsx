@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Bell, Heart, MessageCircle, Star, Crown, Zap, X, CheckCheck, Trash2, BellRing } from 'lucide-react'
 import { requestAndSubscribePush } from '@/components/ServiceWorkerRegistrar'
 import { createClient } from '@/lib/supabase/client'
+import { playMatchSound, playSuperLikeSound, playNotificationSound } from '@/lib/sounds'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
 interface Notif {
@@ -127,6 +128,11 @@ export default function NotificationBell() {
           setNotifs(prev => [enriched, ...prev].slice(0, 50))
           setNewCount(c => c + 1)
 
+          if (enriched.type === 'match')      playMatchSound()
+          else if (enriched.type === 'super_like') playSuperLikeSound()
+          else if (enriched.type !== 'message')    playNotificationSound()
+          // 'message' type is handled by ChatPage's own message sound
+
           // Show system notification when tab is in background
           if (document.hidden && 'serviceWorker' in navigator) {
             const meta = TYPE_META[enriched.type as keyof typeof TYPE_META] ?? TYPE_META.match
@@ -192,9 +198,11 @@ export default function NotificationBell() {
 
   async function clearAll() {
     setClearingAll(true)
-    await fetch('/api/notifications', { method: 'DELETE' })
-    setNotifs([])
-    setNewCount(0)
+    const res = await fetch('/api/notifications', { method: 'DELETE' })
+    if (res.ok) {
+      setNotifs([])
+      setNewCount(0)
+    }
     setClearingAll(false)
   }
 

@@ -81,7 +81,16 @@ export async function middleware(request: NextRequest) {
       cookies: {
         getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value, options }) => {
+            // Delete from the request rather than set-to-empty so that the
+            // server component's cookieStore.getAll() never returns stale
+            // chunk values that combineChunks() could reassemble.
+            if (!value || options?.maxAge === 0) {
+              request.cookies.delete(name)
+            } else {
+              request.cookies.set(name, value)
+            }
+          })
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)

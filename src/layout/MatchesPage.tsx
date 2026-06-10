@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import ConfirmModal from '@/components/ConfirmModal'
 import { createClient } from '@/lib/supabase/client'
+import { playMatchSound } from '@/lib/sounds'
 
 // ─── Types ────────────────────────────────────────────────────
 interface ProfileMeta {
@@ -382,6 +383,7 @@ function StoryPreviewModal({ item, onClose, onLikedBack, canSee }: {
     })
     setLiking(false)
     if (!res.ok) return
+    playMatchSound()
     setJustMatched(true)
     onLikedBack(p.id)
     setTimeout(() => {

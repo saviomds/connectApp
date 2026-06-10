@@ -15,6 +15,7 @@ import {
 import type { DbProfile } from '@/types/database';
 import SplashScreen from './SplashScreen';
 import SwipeTutorial from './SwipeTutorial';
+import { playMatchSound, playLikeSound, playPassSound, playSuperLikeSound, unlockAudio } from '@/lib/sounds';
 
 const SWIPE_THRESHOLD = 80;
 const FLY_DISTANCE    = 600;
@@ -868,7 +869,7 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
 
   const top = deck[0];
 
-  const fetchMore = useCallback(async () => {
+  const fetchMore = useCallback(async (opts?: { includePasses?: boolean }) => {
     if (fetching) return;
     setFetching(true);
     try {
@@ -880,6 +881,7 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
       });
       if (filters.categories.length > 0) params.set('categories', filters.categories.join(','));
       if (isGold && filters.gender !== 'any') params.set('gender', filters.gender);
+      if (opts?.includePasses) params.set('include_passes', 'true');
       const res = await fetch(`/api/profiles?${params}`);
       if (res.ok) {
         const newProfiles: DbProfile[] = await res.json();
@@ -901,6 +903,10 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
     setFlash(dir); setLastSwiped({ profile: top, dir }); setSwiped(prev => new Set([...prev, top.id]));
     setTimeout(() => setFlash(null), 400);
 
+    if (dir === 'like')       playLikeSound();
+    else if (dir === 'pass')  playPassSound();
+    else                      playSuperLikeSound();
+
     try {
       const res = await fetch('/api/swipes', {
         method: 'POST',
@@ -918,7 +924,7 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
 
       if (res.ok) {
         const { matched, remainingSwipes: rem, remainingSuperLikes: remSuper } = await res.json();
-        if (matched) setMatchedProfile(top);
+        if (matched) { playMatchSound(); setMatchedProfile(top); }
         if (rem !== null && rem !== undefined) setRemainingSwipes(rem);
         if (remSuper !== null && remSuper !== undefined) setRemainingSuperLikes(remSuper);
       }
@@ -1030,7 +1036,7 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
                   Clear filters
                 </button>
               )}
-              <button onClick={() => { setProfiles([]); setSwiped(new Set()); fetchMore(); }}
+              <button onClick={() => { setProfiles([]); setSwiped(new Set()); fetchMore({ includePasses: true }); }}
                 disabled={fetching}
                 className="btn-gold px-6 py-3 rounded-2xl font-semibold text-black text-sm disabled:opacity-60">
                 {fetching ? 'Loading…' : 'Refresh'}
@@ -1115,7 +1121,7 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.87 }}
-            onClick={() => swipe('pass')}
+            onClick={() => { unlockAudio(); swipe('pass'); }}
             className="w-[60px] h-[60px] sm:w-[66px] sm:h-[66px] rounded-full flex items-center justify-center btn-action-pass"
             style={{
               background: 'radial-gradient(circle at 38% 32%, rgba(231,76,60,0.2), #0E0E12 72%)',
@@ -1130,7 +1136,7 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
             <motion.button
               whileHover={{ scale: 1.12 }}
               whileTap={{ scale: 0.87 }}
-              onClick={() => swipe('super_like')}
+              onClick={() => { unlockAudio(); swipe('super_like'); }}
               className="w-12 h-12 rounded-full flex items-center justify-center btn-action-star"
               style={{
                 background: 'radial-gradient(circle at 38% 32%, rgba(201,168,76,0.38), #0E0E12 72%)',
@@ -1151,7 +1157,7 @@ export default function DiscoverSwipe({ initialProfiles, currentUserId }: Props)
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.87 }}
-            onClick={() => swipe('like')}
+            onClick={() => { unlockAudio(); swipe('like'); }}
             className="w-[60px] h-[60px] sm:w-[66px] sm:h-[66px] rounded-full flex items-center justify-center btn-action-like"
             style={{
               background: 'radial-gradient(circle at 38% 32%, rgba(46,204,113,0.2), #0E0E12 72%)',

@@ -24,7 +24,7 @@ GRANT SELECT, DELETE            ON conversations TO authenticated;
 
 GRANT SELECT, INSERT, UPDATE    ON messages      TO authenticated;
 
-GRANT SELECT, UPDATE            ON notifications TO authenticated;
+GRANT SELECT, UPDATE, DELETE    ON notifications TO authenticated;
 
 -- app_settings: authenticated can read non-secret rows (RLS enforces the rest)
 GRANT SELECT, UPDATE            ON app_settings  TO authenticated;
